@@ -25,18 +25,26 @@ entstanden.
 
 import argparse
 from risscraper.scraper import Scraper
+import inspect
+import os
 import datetime
 import sys
 import importlib
 import logging
 
+cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"city")))
+if cmd_subfolder not in sys.path:
+    sys.path.insert(0, cmd_subfolder)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Scrape Dein Ratsinformationssystem')
-    parser.add_argument('--config', '-c', dest='configname', default='config',
-            help=("Name of the configuration module to use (e.g. 'config_koeln' for file 'config_koeln.py'). " +
-                "Default: 'config'"))
+    #parser.add_argument('--config', '-c', dest='configname', default='config',
+    #        help=("Name of the configuration module to use (e.g. 'config_koeln' for file 'config_koeln.py'). " +
+    #            "Default: 'config'"))
+    parser.add_argument('--city', '-c', dest='city',
+            help=("Name of the city"))
     parser.add_argument('--verbose', '-v', action='count', default=0, dest="verbose")
     parser.add_argument('--queue', '-q', dest="workfromqueue", action="store_true",
             default=False, help=('Set this flag to activate "greedy" scraping. This means that ' +
@@ -62,20 +70,20 @@ if __name__ == '__main__':
             default=False, help='Print out queue status')
     options = parser.parse_args()
 
-    if options.configname:
-        #config = __import__(options.configname, fromlist=[''])
+    if options.city:
         try:
-            config = importlib.import_module(options.configname)
+            config = __import__(options.city)
         except ImportError, e:
             if "No module named" in str(e):
                 sys.stderr.write("ERROR: Configuration module not found. Make sure you have your config file\n")
-                sys.stderr.write("       named '%s.py' in the main folder.\n" % options.configname)
+                sys.stderr.write("       named '%s.py' in the ./city folder.\n" % options.city)
             sys.exit(1)
 
     # set up logging
     logfile = 'scrapearis.log'
-    if config.LOG_FILE is not None:
-        logfile = config.LOG_FILE
+    if config.LOG_BASE_DIR is not None:
+        now = datetime.datetime.utcnow()
+        logfile = '%s%s-%s-%s.log' % (config.LOG_BASE_DIR, config.CITY, config.RS, now.strftime('%Y%m%d-%H%M'))
     levels = {
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,
@@ -92,17 +100,13 @@ if __name__ == '__main__':
         format='%(asctime)s %(name)s %(levelname)s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('Starting scraper with configuration from "%s" and loglevel "%s"',
-        options.configname, loglevel)
+        options.city, loglevel)
 
     db = None
     if config.DB_TYPE == 'mongodb':
         import db.mongodb
         db = db.mongodb.MongoDatabase(config, options)
         db.setup()
-    #elif config.DB_TYPE == 'mysqldb':
-    #    import db.mysqldb
-    #    db = db.mysqldb.MysqlDatabase(config)
-    #    db.setup()
 
     if options.status:
         db.queue_status()

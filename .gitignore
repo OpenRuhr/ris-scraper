@@ -34,8 +34,12 @@ nosetests.xml
 .project
 .pydevproject
 
+# Komodo Edit
+.komodoproject
+
 # virtualenv directory
 venv
+ris-scraper
 
 # cache directory
 cache

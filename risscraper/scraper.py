@@ -55,9 +55,9 @@ class Scraper(object):
         self.user_agent.set_handle_robots(False)
         self.user_agent.addheaders = [('User-agent', config.USER_AGENT_NAME)]
         # Queues
-        if self.options.workfromqueue:
-            self.session_queue = queue.Queue('SCRAPEARIS_SESSIONS', config, db)
-            self.submission_queue = queue.Queue('SCRAPEARIS_SUBMISSIONS', config, db)
+        #if self.options.workfromqueue:
+        self.session_queue = queue.Queue('SCRAPEARIS_SESSIONS', config, db)
+        self.submission_queue = queue.Queue('SCRAPEARIS_SUBMISSIONS', config, db)
         # system info (PHP/ASP)
         self.template_system = None
         self.urls = None
@@ -321,7 +321,7 @@ class Scraper(object):
                             else:
                                 logging.warn("String '%s' not found in configured RESULT_STRINGS", value)
                                 if self.options.verbose:
-                                    print "WARNING: String '%s' not found in RESULT_STRINGS\n", value
+                                    print "WARNING: String '%s' not found in RESULT_STRINGS\n" % value
                                 agendaitems[agendaitem_id]['result'] = value
                         elif label == 'Bemerkung:':
                             agendaitems[agendaitem_id]['result_note'] = value
