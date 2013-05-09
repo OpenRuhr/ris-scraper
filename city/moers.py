@@ -38,14 +38,20 @@ LOG_BASE_DIR = '/var/log/ris-scraper/'
 RESULT_STRINGS = {
     'zur Kenntnis genommen': 'KENNTNIS',
     'geschoben': 'GESCHOBEN',
-    'zur\xfcckgezogen': 'RUECKZUG',
-    'zur\xfcckgestellt': 'ZURUECKGESTELLT',
+    u'zur\xfcckgezogen': 'RUECKZUG',
+    u'zur\xfcckgestellt': 'ZURUECKGESTELLT',
     
     'einstimmig beschlossen': 'BESCHLOSSEN_EINSTIMMIG',
     u'einstimmig beschlossen mit \xc4nderungen': 'BESCHLOSSEN_EINSTIMMIG_AENDERUNG',
     
     'mehrheitlich beschlossen': 'BESCHLOSSEN_MEHRHEIT',
     u'mehrheitlich beschlossen mit \xc4nderungen': 'BESCHLOSSEN_MEHRHEIT_AENDERUNG',
+    
+    'mehrheitlich abgelehnt': 'ABGELEHNT_MEHRHEIT',
+    u'mehrheitlich abgelehnt mit \xc4nderungen': 'ABGELEHNT_MEHRHEIT_AENDERUNG',
+    
+    'einstimmig abgelehnt': 'ABGELEHNT_EINSTIMMIG',
+    u'einstimmig abgelehnt mit \xc4nderungen': 'ABGELEHNT_EINSTIMMIG_AENDERUNG',
     
 }
 
