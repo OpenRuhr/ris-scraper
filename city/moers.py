@@ -148,7 +148,7 @@ XPATH = {
         'SESSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
 
         # link to committe within the session details page
-        'SESSION_DETAIL_COMMITTEE_LINK': '//a[@class="smccontextmenulink"]',
+        'SESSION_DETAIL_COMMITTEE_LINK': 'li[@class="smcmenucontext_fct_gremium"]/a',
 
         # table rows containing agendaitems on session detail page
         'SESSION_DETAIL_AGENDA_ROWS': '//*[@class="smccontenttable smc_page_to0040_contenttable"]/tbody/tr',

@@ -41,20 +41,27 @@ RESULT_STRINGS = {
     'Die Anfrage wird schriftlich beantwortet.': 'ANFAGE_ANTWORT_SCHRIFTLICH',
     'Die Anfrage ist schriftlich beantwortet worden.': 'ANFRAGE_BEANTWORTET_SCHRIFTLICH',
     u'Die Anfrage ist m\xfcndlich beantwortet worden.': 'ANFAGE_BEANTWORTET_MUENDLICH',
+    u'Die Anfrage ist zur\xfcckgezogen worden.': 'ANFRAGE_RUECKZUG',
+    
     'Die Mitteilung wird zur Kenntnis genommen.': 'MITTEILUNG_KENNTNIS',
+    
     'Die Vorlage wird ohne Votum weitergeleitet.': 'VORLAGE_WEITERLEITUNG',
-    'kein Beratungsergebnis': 'BERATUNG_ERGEBNISLOS',
-    u'Die Beratung der Vorlage wird zur\xfcckgestellt.': 'BERATUNG_ZUERUCKGESTELLT',
     u'Die Entscheidung \xfcber die Vorlage wird zur\xfcckgestellt.': 'VORLAGE_ZUERUECKGESTELLT',
     u'Die Verwaltung zieht die Vorlage zur\xfcck.': 'VORLAGE_RUECKZUG_VERWALTUNG',
-    u'Die Anfrage ist zur\xfcckgezogen worden.': 'ANFRAGE_RUECKZUG',
-    u'Der Antrag wird zur\xfcckgezogen.': 'ANTRAG_RUECKZUG',
-    'Die Abstimmung erfolgte getrennt nach Unterpunkten.': 'ABSTIMMUNG_UNTERPUNKTE',
-    u'Die Vorlage wird zur\xfcck \xfcberwiesen.': 'VORLAGE_RUECKUEBERWEISUNG',
+    u'Die Vorlage wird zur\xfcck \xfcberwiesen.': 'VORLAGE_UEBERWEISUNG_ZURUECK',
+    u'Die Vorlage wird an x \xfcberwiesen.': 'VORLAGE_UEBERWEISUNG',
     'Die Vorlage wird von der Tagesordnung abgesetzt.': 'VORLAGE_ABGESETZT',
+    
+    u'Der Antrag wird zur\xfcckgezogen.': 'ANTRAG_RUECKZUG',
     'Der Antrag ist gegenstandslos, daher keine Abstimmung.': 'ANTRAG_GEGENSTANSLOS',
-    u'Die Beschlussfassung wird teilweise zur\xfcckgestellt.': 'BESCHLUSS_ZURUECKGESTELLT_TEILWEISE',
+    
 
+    'kein Beratungsergebnis': 'BERATUNG_ERGEBNISLOS',
+    u'Die Beratung der Vorlage wird zur\xfcckgestellt.': 'BERATUNG_ZUERUCKGESTELLT',
+    
+    u'Die Beschlussfassung wird teilweise zur\xfcckgestellt.': 'BESCHLUSS_ZURUECKGESTELLT_TEILWEISE',
+    'Die Abstimmung erfolgte getrennt nach Unterpunkten.': 'ABSTIMMUNG_UNTERPUNKTE',
+    
     'Abstimmungsergebnis: Einstimmig nach Beschlussvorschlag': 'BESCHLOSSEN_EINSTIMMIG',
     u'Abstimmungsergebnis: Einstimmig nach Erg\xe4nzung des Beschlussvorschlages':'BESCHLOSSEN_EINSTIMMIG_ERGAENZUNG',
     u'Abstimmungsergebnis: Einstimmig nach \xc4nderung des Beschlussvorschlages': 'BESCHLOSSEN_EINSTIMMIG_AENDERUNG',
@@ -65,7 +72,9 @@ RESULT_STRINGS = {
 
     'Abstimmungsergebnis: Einstimmig gegen Beschlussvorschlag': 'ABGELEHNT_EINSTIMMIG',
 
-    'Abstimmungsergebnis: Mehrheitlich gegen Beschlussvorschlag': 'ABGELEHNT_MEHRHEIT'
+    'Abstimmungsergebnis: Mehrheitlich gegen Beschlussvorschlag': 'ABGELEHNT_MEHRHEIT',
+    
+    'erledigt': 'ERLEDIGT'
 }
 
 ##### Page URL masks
@@ -159,7 +168,7 @@ XPATH = {
         'SESSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
 
         # link to committe within the session details page
-        'SESSION_DETAIL_COMMITTEE_LINK': '//a[@class="smccontextmenulink"]',
+        'SESSION_DETAIL_COMMITTEE_LINK': '//li[@class="smcmenucontext_fct_gremium"]/a',
 
         # table rows containing agendaitems on session detail page
         'SESSION_DETAIL_AGENDA_ROWS': '//*[@class="smccontenttable smc_page_to0040_contenttable"]/tbody/tr',

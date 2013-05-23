@@ -166,7 +166,7 @@ class Scraper(object):
         html = html.replace('&nbsp;', ' ')
         parser = etree.HTMLParser()
         dom = etree.parse(StringIO(html), parser)
-
+        print session_url
         # check for page errors
         try:
             page_title = dom.xpath('//h1')[0].text
