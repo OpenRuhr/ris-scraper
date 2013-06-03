@@ -248,7 +248,9 @@ class Scraper(object):
         rows = dom.xpath(self.xpath['SESSION_DETAIL_AGENDA_ROWS'])
         if len(rows) == 0:
             logging.critical('Cannot find agenda using XPath SESSION_DETAIL_AGENDA_ROWS')
-            raise TemplateError('Cannot find agenda using XPath SESSION_DETAIL_AGENDA_ROWS')
+            #raise TemplateError('Cannot find agenda using XPath SESSION_DETAIL_AGENDA_ROWS')
+            agendaitems = {}
+            session.agendaitems = agendaitems.values()
         else:
             agendaitems = {}
             agendaitem_id = None
