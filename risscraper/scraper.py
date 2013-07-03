@@ -398,7 +398,7 @@ class Scraper(object):
             submission_id = parsed['submission_id']
 
         logging.info("Getting submission %d from %s", submission_id, submission_url)
-
+        print "Getting submission %d from %s", submission_id, submission_url
         submission = Submission(numeric_id=submission_id)
 
         time.sleep(self.config.WAIT_TIME)
@@ -526,6 +526,7 @@ class Scraper(object):
                             name=name)
                         #print attachment_id
                         # Traversing the whole mechanize response to submit this form
+                        #print mechanize_forms
                         for mform in mechanize_forms:
                             #print "Form found: '%s'" % mform
                             for control in mform.controls:
@@ -551,12 +552,14 @@ class Scraper(object):
         if self.options.verbose:
             print "Getting attachment '%s'" % attachment.identifier
         mechanize_request = form.click()
+        #print form
         try:
             mform_response = mechanize.urlopen(mechanize_request)
             mform_url = mform_response.geturl()
             if self.list_in_string(self.urls['ATTACHMENT_DOWNLOAD_TARGET'], mform_url):
                 #print "Response headers:", mform_response.info()
                 attachment.content = mform_response.read()
+                #print attachment.content
                 attachment.mimetype = magic.from_buffer(attachment.content, mime=True)
                 attachment.filename = self.make_attachment_filename(attachment.identifier, attachment.mimetype)
             else:

@@ -2,6 +2,10 @@
 
 RS = "051120000000"  # Stadt Duisburg
 
+
+# Stadtname für Logfile
+CITY = 'duisburg'
+
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
 
@@ -14,69 +18,25 @@ DB_HOST = 'localhost'
 # MongoDB default port is 27017
 DB_PORT = 27017
 
-# Not used for MongoDB
-DB_USER = ''
-DB_PASS = ''
-
 # SessionNet base url, should include trailing slash
 BASE_URL = 'https://www.duisburg.de/ratsinformationssystem/bi/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'
 
-# Folder where attachments will be stored
-ATTACHMENT_FOLDER = 'cache/attachments/' + RS
-
-# This requires you to have the tika Jar in the specified location.
-# This will start the Java Runtime environment with the Jar for
-# every file that will be processed. If you want the faster version,
-# comment this out and use the server version described below.
-#
-TIKA_COMMAND = 'java -jar bin/tika-app-1.3.jar -eutf8 -t'
-
-# If you prefer fast content extraction, start Tika as a server
-# before running the scraper. Use a command like this:
-#
-# > java -jar bin/tika-app-1.3.jar -s -eutf8 -t 55555
-#
-# Make sure to set the according port below:
-#
-#TIKA_SERVER = 'localhost'
-#TIKA_PORT = 55555
-# ^ (The server option is not implemented yet!)
-
 # Number of seconds to wait between requests. Increase this
 # if the systems behaves unstable (seconds)
 WAIT_TIME = 0.2
 
+# Log level (DEBUG, INFO, WARNING, ERROR or CRITICAL)
+LOG_LEVEL = 'INFO'
+# File to log to
+LOG_BASE_DIR = '/var/log/ris-scraper/'
+
 ###### Result normalization mapping
 
 RESULT_STRINGS = {
-    'zur Kenntnis genommen': 'KENNTNIS_GENOMMEN',
-    'einstimmig beschlossen': 'BESCHLOSSEN_EINSTIMMIG',
-    u'einstimmig mit \xc4nderung / teilweise beschlossen': 'BESCHLOSSEN_EINSTIMMIG_GEAENDERT',
-    'mit Mehrheit beschlossen': 'BESCHLOSSEN_MEHRHEIT',
-    'mehrheitlich beschlossen': 'BESCHLOSSEN_MEHRHEIT',
-    u'mehrheitlich mit \xc4nderung /teilweise beschlossen': 'BESCHLOSSEN_MEHRHEIT_GEAENDERT',
-    'in Form von WAHLEN beschlossen': 'BESCHLOSSEN_DURCH_WAHLEN',
-    'einstimmig abgelehnt': 'ABGELEHNT_EINSTIMMIG',
-    'mehrheitlich abgelehnt': 'ABGELEHNT_MEHRHEIT',
-    'im BBR beraten': 'BERATEN_BBR',
-    'verwiesen in:': 'VERWIESEN',
-    'in der Sitzung vertagt': 'VERTAGT_IN_SITZUNG',
-    u'vor Eintritt in die Tagesordnung zur\xfcckgezogen': 'ZURUECKGEZOGEN',
-    u'in der Sitzung zur\xfcckgezogen': 'ZURUECKGEZOGEN',
-    'abgesetzt': 'ABGESETZT',
-    'von der Tagesordnung abgesetzt': 'ABGESETZT',
-    'Verwaltung wird so verfahren': 'AKZEPTIERT',
-    'schriftlicher Bericht/Vorlage wurde zugesagt': 'BERICHT_ZUGESAGT',
-    'wird in der Verwaltung weiterbearbeitet': 'WEITERBEARBEITUNG_IN_VERWALTUNG',
-    'durch STELLUNGNAHME der Verwaltung erledigt': 'ERLEDIGT_STELLUNGNAHME_VERWALTUNG',
-    u'durch andere Beschl\xfcsse erledigt': 'ERLEDIGT_DURCH_ANDERE_BESCHLUESSE',
-    'ohne Empfehlung behandelt': 'BEHANDELT_OHNE_EMPFEHLUNG',
-    'Siehe Bemerkungsfeld': 'SONSTIGES',
-    'siehe Protokoll': 'SONSTIGES',
-    'Quorum wurde erreicht': 'QUORUM_ERREICHT'
+    
 }
 
 
@@ -198,3 +158,14 @@ XPATH = {
         'SUBMISSION_DETAIL_ATTACHMENTS_CONTAINER_CLASSNAME': 'smcdocbox'
     }
 }
+
+
+FILE_EXTENSIONS = {
+    'application/pdf': 'pdf',
+    'image/tiff': 'tif',
+    'image/jpeg': 'jpg',
+    'application/vnd.ms-powerpoint': 'pptx',
+    'application/msword': 'doc',
+    'application/zip': 'zip'
+}
+
