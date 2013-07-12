@@ -271,7 +271,6 @@ class Scraper(object):
                     number = number[0]
                 if number == []:
                     number = None
-                #print "number: %s" % number
                 if row_id is not None:
                     # Agendaitem main row
                     agendaitem_id = row_id.rsplit('_', 1)[1]
@@ -315,16 +314,15 @@ class Scraper(object):
                             found_attachments.append(attachment_id)
                     #if len(attachments):
                     #    agendaitems[agendaitem_id]['attachments'] = attachments
-
-                elif 'smc_tophz' in row_classes:
+                # Alternative für smc_tophz wegen Version 4.3.5 bi (Layout 3)
+                elif ('smc_tophz' in row_classes) or (row.get('valign') == 'top' and row.get('debug') == '3'):
                     # additional (optional row for agendaitem)
                     label = fields[1].text
                     value = fields[2].text
                     if label is not None and value is not None:
                         label = label.strip()
                         value = value.strip()
-                        #print (label, value)
-                        if label in ['Ergebnis:', 'Beschluss:']:
+                        if label in ['Ergebnis:', 'Beschluss:', 'Beratungsergebnis:']:
                             if value in self.config.RESULT_STRINGS:
                                 agendaitems[agendaitem_id]['result'] = self.config.RESULT_STRINGS[value]
                             else:
@@ -405,7 +403,6 @@ class Scraper(object):
             submission_id = parsed['submission_id']
 
         logging.info("Getting submission %d from %s", submission_id, submission_url)
-        print "Getting submission %d from %s", submission_id, submission_url
         submission = Submission(numeric_id=submission_id)
 
         time.sleep(self.config.WAIT_TIME)
