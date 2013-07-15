@@ -600,6 +600,8 @@ class Scraper(object):
         if ext == 'dat':
             logging.warn("No entry in config.FILE_EXTENSIONS for '%s'", mimetype)
             sys.stderr.write("WARNING: No entry in config.FILE_EXTENSIONS for '%s'\n" % mimetype)
+        # Verhindere Dateinamen > 255 Zeichen
+        identifier = identifier[:192]
         return identifier + '.' + ext
 
     def save_attachment_file(self, content, identifier, mimetype):

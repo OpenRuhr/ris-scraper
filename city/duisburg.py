@@ -36,7 +36,31 @@ LOG_BASE_DIR = '/var/log/ris-scraper/'
 ###### Result normalization mapping
 
 RESULT_STRINGS = {
+    'Kenntnis genommen': 'MITTEILUNG_KENNTNIS',
     
+    'Die Verwaltung sagte eine schriftliche Beantwortung zu.': 'ANFAGE_ANTWORT_SCHRIFTLICH',
+    u'Die Anfrage wurde m\xfcndlich beantwortet.': 'ANFRAGE_BEANTWORTET_MUENDLICH',
+    'Von der Tagesordnung abgesetzt.': 'TAGESORDNUNG_ABGESETZT',
+    'Die Anfrage wurde durch eine Mitteilungsvorlage beantwortet.': 'ANFRAGE_BEANTWORTET_MITTEILUNGSVORLAGE',
+    'Sachstandsbericht durch die Verwaltung': 'SACHSTANDBERICHT_VERWALTUNG',
+    
+    'Die Vorlage wurde vertagt.': 'VORLAGE_VERTAGT',
+    u'Antrag/Anfrage wurde zur\xfcckgezogen': 'ANTRAG_RUECKZUG',
+    u'Die Vorlage wurde von der Verwaltung zur\xfcckgezogen.': 'VORLAGE_RUECKZUG_VERWALTUNG',
+    u'Die Beschlussfassung wurde zur\xfcckgestellt.': 'BESCHLUSS_ZURUECKGESTELLT', 
+    
+    'Protokollauszug beachten': 'PROTOKOLLAUSZUG_BEACHTEN',
+    'In 1. Lesung beraten': 'BERATEN_LESUNG_1',
+    'In 2. Lesung beraten': 'BERATEN_LESUNG_2',
+    'In 3. Lesung beraten': 'BERATEN_LESUNG_3',
+    
+    'Einstimmig beschlossen': 'BESCHLOSSEN_EINSTIMMIG',
+    'Abweichender Beschluss': 'BESCHLOSSEN_AENDERUNG',
+    
+    'Nicht einstimmig beschlossen': 'BESCHLOSSEN_MEHRHEIT',
+    'Einstimmig beschlossen (bei Stimmenthaltungen)': 'BESCHLOSSEN_MIT_ENTHALTUNGEN',
+    
+    'Abgelehnt': 'ABGELEHNT',
 }
 
 
@@ -166,6 +190,7 @@ FILE_EXTENSIONS = {
     'image/jpeg': 'jpg',
     'application/vnd.ms-powerpoint': 'pptx',
     'application/msword': 'doc',
-    'application/zip': 'zip'
+    'application/zip': 'zip',
+    'text/plain': 'txt'
 }
 
