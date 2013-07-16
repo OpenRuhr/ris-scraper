@@ -450,6 +450,7 @@ class Scraper(object):
         tds = dom.xpath(self.xpath['SUBMISSION_DETAIL_IDENTIFIER_TD'])
         if len(tds) == 0:
             logging.critical('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
+            logging.critical('HTML Dump:' + html)
             raise TemplateError('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
         else:
             current_category = None
