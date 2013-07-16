@@ -404,149 +404,163 @@ class Scraper(object):
 
         logging.info("Getting submission %d from %s", submission_id, submission_url)
         submission = Submission(numeric_id=submission_id)
-
-        time.sleep(self.config.WAIT_TIME)
-        try:
-            response = self.user_agent.open(submission_url)
-        except urllib2.HTTPError, e:
-            if e.code == 404:
-                sys.stderr.write("URL not found (HTTP 404) error caught: %s\n" % submission_url)
-                sys.stderr.write("Please check BASE_URL in your configuration.\n")
-                sys.exit(1)
-        mechanize_forms = mechanize.ParseResponse(response, backwards_compat=False)
-        response.seek(0)
-        html = response.read()
-        html = html.replace('&nbsp;', ' ')
-        parser = etree.HTMLParser()
-        dom = etree.parse(StringIO(html), parser)
-
-        # check for page errors
-        try:
-            page_title = dom.xpath('//h1')[0].text
-            if 'Fehlermeldung' in page_title:
-                logging.info("Page %s cannot be accessed due to server error", submission_url)
-                if self.options.verbose:
-                    print "Page %s cannot be accessed due to server error" % submission_url
-                return
-            if 'Berechtigungsfehler' in page_title:
-                logging.info("Page %s cannot be accessed due to permissions", submission_url)
-                if self.options.verbose:
-                    print "Page %s cannot be accessed due to permissions" % submission_url
-                return
-        except:
-            pass
-
-        submission.original_url = submission_url
-
-        # Session title
-        try:
-            stitle = dom.xpath(self.xpath['SUBMISSION_DETAIL_TITLE'])
-            submission.title = stitle[0].text
-        except:
-            logging.critical('Cannot find submission title element using XPath SUBMISSION_DETAIL_TITLE')
-            raise TemplateError('Cannot find submission title element using XPath SUBMISSION_DETAIL_TITLE')
-
-        # Submission identifier, date, type etc
-        tds = dom.xpath(self.xpath['SUBMISSION_DETAIL_IDENTIFIER_TD'])
-        if len(tds) == 0:
-            logging.critical('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
-            logging.critical('HTML Dump:' + html)
-            raise TemplateError('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
-        else:
-            current_category = None
-            for n in range(0, len(tds)):
+        try_until = 1
+        try_counter = 0
+        try_found = False
+        
+        while (try_counter < try_until):
+            try_counter += 1
+            try_found = False
+            time.sleep(self.config.WAIT_TIME)
+            try:
+                response = self.user_agent.open(submission_url)
+            except urllib2.HTTPError, e:
+                if e.code == 404:
+                    sys.stderr.write("URL not found (HTTP 404) error caught: %s\n" % submission_url)
+                    sys.stderr.write("Please check BASE_URL in your configuration.\n")
+                    sys.exit(1)
+            mechanize_forms = mechanize.ParseResponse(response, backwards_compat=False)
+            response.seek(0)
+            html = response.read()
+            html = html.replace('&nbsp;', ' ')
+            parser = etree.HTMLParser()
+            dom = etree.parse(StringIO(html), parser)
+            # Hole die Seite noch einmal wenn unbekannter zufällig auftretender Fehler ohne Fehlermeldung ausgegeben wird (gefunden in Duisburg, vermutlich kaputte Server Config)
+            try:
+                page_title = dom.xpath('//h1')[0].text
+                if 'Fehler' in page_title:
+                    try_until = 3
+                    try_found = True
+                    logging.info("Original RIS Server Bug, restart scraping submission %s", submission_url)
+            except:
+                pass
+            if (try_found == False):
+            # check for page errors
                 try:
-                    tdcontent = tds[n].text.strip()
+                    if 'Fehlermeldung' in page_title:
+                        logging.info("Page %s cannot be accessed due to server error", submission_url)
+                        if self.options.verbose:
+                            print "Page %s cannot be accessed due to server error" % submission_url
+                        return
+                    if 'Berechtigungsfehler' in page_title:
+                        logging.info("Page %s cannot be accessed due to permissions", submission_url)
+                        if self.options.verbose:
+                            print "Page %s cannot be accessed due to permissions" % submission_url
+                        return
                 except:
-                    continue
-                if tdcontent == 'Name:':
-                    submission.identifier = tds[n + 1].text.strip()
-                elif tdcontent == 'Art:':
-                    submission.type = tds[n + 1].text.strip()
-                elif tdcontent == 'Datum:':
-                    submission.date = tds[n + 1].text.strip()
-                elif tdcontent == 'Name:':
-                    submission.identifier = tds[n + 1].text.strip()
-                elif tdcontent == 'Betreff:':
-                    submission.subject = '; '.join(tds[n + 1].xpath('./text()'))
-                elif tdcontent == 'Referenzvorlage:':
-                    link = tds[n + 1].xpath('a')[0]
-                    href = link.get('href')
-                    parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
-                    submission.superordinate = {
-                        'identifier': link.text.strip(),
-                        'numeric_id': parsed['submission_id']
-                    }
-                    # add superordinate submission to queue
-                    if hasattr(self, 'submission_queue'):
-                        self.submission_queue.add(parsed['submission_id'])
-                # subordinate submissions are added to the queue
-                elif tdcontent == 'Untergeordnete Vorlage(n):':
-                    current_category = 'subordinates'
-                    for link in tds[n + 1].xpath('a'):
-                        href = link.get('href')
-                        parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
-                        if hasattr(self, 'submission_queue') and parsed is not None:
-                            #add subordinate submission to queue
-                            self.submission_queue.add(parsed['submission_id'])
+                    pass
+        
+                submission.original_url = submission_url
+        
+                # Session title
+                try:
+                    stitle = dom.xpath(self.xpath['SUBMISSION_DETAIL_TITLE'])
+                    submission.title = stitle[0].text
+                except:
+                    logging.critical('Cannot find submission title element using XPath SUBMISSION_DETAIL_TITLE')
+                    raise TemplateError('Cannot find submission title element using XPath SUBMISSION_DETAIL_TITLE')
+        
+                # Submission identifier, date, type etc
+                tds = dom.xpath(self.xpath['SUBMISSION_DETAIL_IDENTIFIER_TD'])
+                if len(tds) == 0:
+                    logging.critical('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
+                    logging.critical('HTML Dump:' + html)
+                    raise TemplateError('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
                 else:
-                    if current_category == 'subordinates':
-                        for link in tds[n + 1].xpath('a'):
+                    current_category = None
+                    for n in range(0, len(tds)):
+                        try:
+                            tdcontent = tds[n].text.strip()
+                        except:
+                            continue
+                        if tdcontent == 'Name:':
+                            submission.identifier = tds[n + 1].text.strip()
+                        elif tdcontent == 'Art:':
+                            submission.type = tds[n + 1].text.strip()
+                        elif tdcontent == 'Datum:':
+                            submission.date = tds[n + 1].text.strip()
+                        elif tdcontent == 'Name:':
+                            submission.identifier = tds[n + 1].text.strip()
+                        elif tdcontent == 'Betreff:':
+                            submission.subject = '; '.join(tds[n + 1].xpath('./text()'))
+                        elif tdcontent == 'Referenzvorlage:':
+                            link = tds[n + 1].xpath('a')[0]
                             href = link.get('href')
                             parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
-                            if hasattr(self, 'submission_queue') and parsed is not None:
+                            submission.superordinate = {
+                                'identifier': link.text.strip(),
+                                'numeric_id': parsed['submission_id']
+                            }
+                            # add superordinate submission to queue
+                            if hasattr(self, 'submission_queue'):
                                 self.submission_queue.add(parsed['submission_id'])
-
-            if not hasattr(submission, 'identifier'):
-                logging.critical('Cannot find session identifier using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
-                raise TemplateError('Cannot find session identifier using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
-
-        # "Beratungsfolge"(list of sessions for this submission)
-        # This is currently not parsed for scraping, but only for
-        # gathering session-attachment ids fpr later exclusion
-        found_attachments = []
-        rows = dom.xpath(self.xpath['SUBMISSION_DETAIL_AGENDA_ROWS'])
-        for row in rows:
-            formfields = row.xpath('.//input[@type="hidden"][@name="DT"]')
-            if len(formfields):
-                attachment_id = formfields[0].get('value')
-                if attachment_id is not None:
-                    found_attachments.append(attachment_id)
-
-        # submission-related attachments
-        submission.attachments = []
-        containers = dom.xpath(self.xpath['SUBMISSION_DETAIL_ATTACHMENTS'])
-        for container in containers:
-            try:
-                classes = container.get('class').split(' ')
-            except:
-                continue
-            if self.xpath['SUBMISSION_DETAIL_ATTACHMENTS_CONTAINER_CLASSNAME'] not in classes:
-                continue
-            rows = container.xpath('.//tr')
-            for row in rows:
-                forms = row.xpath('.//form')
-                for form in forms:
-                    name = " ".join(row.xpath('./td/text()')).strip()
-                    for hidden_field in form.xpath('input[@name="DT"]'):
-                        attachment_id = hidden_field.get('value')
-                        if attachment_id in found_attachments:
-                            continue
-                        attachment = Attachment(
-                            identifier=attachment_id,
-                            name=name)
-                        #print attachment_id
-                        # Traversing the whole mechanize response to submit this form
-                        #print mechanize_forms
-                        for mform in mechanize_forms:
-                            #print "Form found: '%s'" % mform
-                            for control in mform.controls:
-                                if control.name == 'DT' and control.value == attachment_id:
-                                    attachment = self.get_attachment_file(attachment, mform)
-                                    submission.attachments.append(attachment)
-
-        # forcing overwrite=True here
-        oid = self.db.save_submission(submission)
+                        # subordinate submissions are added to the queue
+                        elif tdcontent == 'Untergeordnete Vorlage(n):':
+                            current_category = 'subordinates'
+                            for link in tds[n + 1].xpath('a'):
+                                href = link.get('href')
+                                parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
+                                if hasattr(self, 'submission_queue') and parsed is not None:
+                                    #add subordinate submission to queue
+                                    self.submission_queue.add(parsed['submission_id'])
+                        else:
+                            if current_category == 'subordinates':
+                                for link in tds[n + 1].xpath('a'):
+                                    href = link.get('href')
+                                    parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
+                                    if hasattr(self, 'submission_queue') and parsed is not None:
+                                        self.submission_queue.add(parsed['submission_id'])
+        
+                    if not hasattr(submission, 'identifier'):
+                        logging.critical('Cannot find session identifier using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
+                        raise TemplateError('Cannot find session identifier using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
+        
+                # "Beratungsfolge"(list of sessions for this submission)
+                # This is currently not parsed for scraping, but only for
+                # gathering session-attachment ids fpr later exclusion
+                found_attachments = []
+                rows = dom.xpath(self.xpath['SUBMISSION_DETAIL_AGENDA_ROWS'])
+                for row in rows:
+                    formfields = row.xpath('.//input[@type="hidden"][@name="DT"]')
+                    if len(formfields):
+                        attachment_id = formfields[0].get('value')
+                        if attachment_id is not None:
+                            found_attachments.append(attachment_id)
+        
+                # submission-related attachments
+                submission.attachments = []
+                containers = dom.xpath(self.xpath['SUBMISSION_DETAIL_ATTACHMENTS'])
+                for container in containers:
+                    try:
+                        classes = container.get('class').split(' ')
+                    except:
+                        continue
+                    if self.xpath['SUBMISSION_DETAIL_ATTACHMENTS_CONTAINER_CLASSNAME'] not in classes:
+                        continue
+                    rows = container.xpath('.//tr')
+                    for row in rows:
+                        forms = row.xpath('.//form')
+                        for form in forms:
+                            name = " ".join(row.xpath('./td/text()')).strip()
+                            for hidden_field in form.xpath('input[@name="DT"]'):
+                                attachment_id = hidden_field.get('value')
+                                if attachment_id in found_attachments:
+                                    continue
+                                attachment = Attachment(
+                                    identifier=attachment_id,
+                                    name=name)
+                                #print attachment_id
+                                # Traversing the whole mechanize response to submit this form
+                                #print mechanize_forms
+                                for mform in mechanize_forms:
+                                    #print "Form found: '%s'" % mform
+                                    for control in mform.controls:
+                                        if control.name == 'DT' and control.value == attachment_id:
+                                            attachment = self.get_attachment_file(attachment, mform)
+                                            submission.attachments.append(attachment)
+        
+                # forcing overwrite=True here
+                oid = self.db.save_submission(submission)
 
     def get_attachment_file(self, attachment, form):
         """
