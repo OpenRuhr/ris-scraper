@@ -223,8 +223,8 @@ class Scraper(object):
         # Session identifier, date, address etc
         tds = dom.xpath(self.xpath['SESSION_DETAIL_IDENTIFIER_TD'])
         if len(tds) == 0:
-            logging.critical('Cannot find table fields using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
-            raise TemplateError('Cannot find table fields using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
+            logging.critical('Cannot find table fields using SESSION_DETAIL_IDENTIFIER_TD_XPATH at session ' + session_url)
+            raise TemplateError('Cannot find table fields using SESSION_DETAIL_IDENTIFIER_TD_XPATH at session ' + session_url)
         else:
             for n in range(0, len(tds)):
                 try:
