@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 """
-Copyright (c) 2012 Marian Steinbach
+Copyright (c) 2012 Marian Steinbach, Ernesto Ruge
 
 Hiermit wird unentgeltlich jeder Person, die eine Kopie der Software und
 der zugehörigen Dokumentationen (die "Software") erhält, die Erlaubnis
@@ -24,13 +24,15 @@ entstanden.
 """
 
 import argparse
-from risscraper.scraper import Scraper
+from risscraper.scrapersessionnet import ScraperSessionNet
+from risscraper.scraperallris import ScraperAllRis
 import inspect
 import os
 import datetime
 import sys
 import importlib
 import logging
+import calendar
 
 cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"city")))
 if cmd_subfolder not in sys.path:
@@ -72,6 +74,7 @@ if __name__ == '__main__':
 
     if options.city:
         try:
+            
             config = __import__(options.city)
         except ImportError, e:
             if "No module named" in str(e):
@@ -114,8 +117,13 @@ if __name__ == '__main__':
     if options.erase_db:
         print "Erasing database"
         db.erase()
-
-    scraper = Scraper(config, db, options)
+    
+    # TODO: Autodetect
+    if config.SCRAPER_TYPE == 'SESSIONNET':
+        scraper = ScraperSessionNet(config, db, options)
+    elif config.SCRAPER_TYPE == 'ALLRIS':
+        scraper = ScraperAllRis(config, db, options)
+    
     scraper.guess_system()
 
     if options.session_id:
@@ -139,7 +147,7 @@ if __name__ == '__main__':
             sys.exit()
         if options.end_month:
             try:
-                options.end_month = datetime.datetime.strptime(options.end_month, '%Y-%m')
+                options.end_month = datetime.datetime.strptime("%s-%s" % (options.end_month, calendar.monthrange(int(options.end_month[0:4]), int(options.end_month[5:7]))[1]), '%Y-%m-%d')
             except ValueError:
                 sys.stderr.write("Bad format or invalid month for --end parameter. Use 'YYYY-MM'.\n")
                 sys.exit()

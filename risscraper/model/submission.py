@@ -32,7 +32,7 @@ class Submission(Document):
     A submission (Vorlage) class
     """
     def __init__(self, numeric_id, identifier=None, title=None, subject=None, type=None,
-                 date=None, original_url=None, attachments=None, superordinate=None):
+                 date=None, original_url=None, attachments=None, superordinate=None, description=None):
         self.numeric_id = numeric_id
         self.identifier = identifier
         self.subject = subject
@@ -42,6 +42,7 @@ class Submission(Document):
         self.original_url = original_url
         self.attachments = attachments
         self.superordinate = superordinate
+        self.description = description
         super(Submission, self).__init__()
 
     @property

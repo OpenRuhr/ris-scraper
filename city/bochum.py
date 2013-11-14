@@ -32,6 +32,8 @@ LOG_LEVEL = 'INFO'
 # File to log to
 LOG_BASE_DIR = '/var/log/ris-scraper/'
 
+#Scraper Type
+SCRAPER_TYPE = 'SESSIONNET'
 
 
 

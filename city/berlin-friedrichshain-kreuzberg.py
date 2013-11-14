@@ -1,9 +1,9 @@
 # encoding: utf-8
 
-RS = "059110000000" #Bochum
+RS = "110020002002"  # Berlin Friedrichshain Kreuzberg
 
 # Stadtname für Logfile
-CITY = 'bochum'
+CITY = 'berlin-friedrichshain-kreuzberg'
 
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
@@ -18,7 +18,7 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 
 # SessionNet base url, should include trailing slash
-BASE_URL = 'https://session.bochum.de/bi/'
+BASE_URL = 'http://www.berlin.de/ba-friedrichshain-kreuzberg/bvv-online/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'
@@ -32,43 +32,42 @@ LOG_LEVEL = 'INFO'
 # File to log to
 LOG_BASE_DIR = '/var/log/ris-scraper/'
 
-
-
+#Scraper Type
+SCRAPER_TYPE = 'ALLRIS'
 
 ###### Result normalization mapping
 
 RESULT_STRINGS = {
-    'Die Anfrage wird schriftlich beantwortet.': 'ANFAGE_ANTWORT_SCHRIFTLICH',
-    'Die Anfrage ist schriftlich beantwortet worden.': 'ANFRAGE_BEANTWORTET_SCHRIFTLICH',
-    u'Die Anfrage ist m\xfcndlich beantwortet worden.': 'ANFAGE_BEANTWORTET_MUENDLICH',
-    'Die Mitteilung wird zur Kenntnis genommen.': 'MITTEILUNG_KENNTNIS',
-    'Die Vorlage wird ohne Votum weitergeleitet.': 'VORLAGE_WEITERLEITUNG',
-    'kein Beratungsergebnis': 'BERATUNG_ERGEBNISLOS',
-    u'Die Beratung der Vorlage wird zur\xfcckgestellt.': 'BERATUNG_ZUERUCKGESTELLT',
-    u'Die Entscheidung \xfcber die Vorlage wird zur\xfcckgestellt.': 'VORLAGE_ZUERUECKGESTELLT',
-    u'Die Verwaltung zieht die Vorlage zur\xfcck.': 'VORLAGE_RUECKZUG_VERWALTUNG',
-    u'Die Anfrage ist zur\xfcckgezogen worden.': 'ANFRAGE_RUECKZUG',
-    u'Der Antrag wird zur\xfcckgezogen.': 'ANTRAG_RUECKZUG',
-    'Die Abstimmung erfolgte getrennt nach Unterpunkten.': 'ABSTIMMUNG_UNTERPUNKTE',
-    u'Die Vorlage wird zur\xfcck \xfcberwiesen.': 'VORLAGE_RUECKUEBERWEISUNG',
-    'Die Vorlage wird von der Tagesordnung abgesetzt.': 'VORLAGE_ABGESETZT',
-    'Der Antrag ist gegenstandslos, daher keine Abstimmung.': 'ANTRAG_GEGENSTANSLOS',
-    u'Die Beschlussfassung wird teilweise zur\xfcckgestellt.': 'BESCHLUSS_ZURUECKGESTELLT_TEILWEISE',
-
-    'Abstimmungsergebnis: Einstimmig nach Beschlussvorschlag': 'BESCHLOSSEN_EINSTIMMIG',
-    u'Abstimmungsergebnis: Einstimmig nach Erg\xe4nzung des Beschlussvorschlages':'BESCHLOSSEN_EINSTIMMIG_ERGAENZUNG',
-    u'Abstimmungsergebnis: Einstimmig nach \xc4nderung des Beschlussvorschlages': 'BESCHLOSSEN_EINSTIMMIG_AENDERUNG',
-
-    'Abstimmungsergebnis: Mehrheitlich nach Beschlussvorschlag': 'BESCHLOSSEN_MEHRHEIT',
-    u'Abstimmungsergebnis: Mehrheitlich nach Erg\xe4nzung des Beschlussvorschlages':'BESCHLOSSEN_MEHRHEIT_ERGAENZUNG',
-    u'Abstimmungsergebnis: Mehrheitlich nach \xc4nderung des Beschlussvorschlages': 'BESCHLOSSEN_MEHRHEIT_AENDERUNG',
-
-    'Abstimmungsergebnis: Einstimmig gegen Beschlussvorschlag': 'ABGELEHNT_EINSTIMMIG',
-
-    'Abstimmungsergebnis: Mehrheitlich gegen Beschlussvorschlag': 'ABGELEHNT_MEHRHEIT'
+    'Kenntnis genommen': 'MITTEILUNG_KENNTNIS',
+    
+    'Die Verwaltung sagte eine schriftliche Beantwortung zu.': 'ANFAGE_ANTWORT_SCHRIFTLICH',
+    u'Die Anfrage wurde m\xfcndlich beantwortet.': 'ANFRAGE_BEANTWORTET_MUENDLICH',
+    'Von der Tagesordnung abgesetzt.': 'TAGESORDNUNG_ABGESETZT',
+    'Die Anfrage wurde durch eine Mitteilungsvorlage beantwortet.': 'ANFRAGE_BEANTWORTET_MITTEILUNGSVORLAGE',
+    'Sachstandsbericht durch die Verwaltung': 'SACHSTANDBERICHT_VERWALTUNG',
+    
+    'Die Vorlage wurde vertagt.': 'VORLAGE_VERTAGT',
+    u'Antrag/Anfrage wurde zur\xfcckgezogen': 'ANTRAG_RUECKZUG',
+    u'Die Vorlage wurde von der Verwaltung zur\xfcckgezogen.': 'VORLAGE_RUECKZUG_VERWALTUNG',
+    u'Die Beschlussfassung wurde zur\xfcckgestellt.': 'BESCHLUSS_ZURUECKGESTELLT', 
+    
+    'Protokollauszug beachten': 'PROTOKOLLAUSZUG_BEACHTEN',
+    'In 1. Lesung beraten': 'BERATEN_LESUNG_1',
+    'In 2. Lesung beraten': 'BERATEN_LESUNG_2',
+    'In 3. Lesung beraten': 'BERATEN_LESUNG_3',
+    
+    'Einstimmig beschlossen': 'BESCHLOSSEN_EINSTIMMIG',
+    'Abweichender Beschluss': 'BESCHLOSSEN_AENDERUNG',
+    
+    'Nicht einstimmig beschlossen': 'BESCHLOSSEN_MEHRHEIT',
+    'Einstimmig beschlossen (bei Stimmenthaltungen)': 'BESCHLOSSEN_MIT_ENTHALTUNGEN',
+    
+    'Abgelehnt': 'ABGELEHNT',
 }
 
+
 ##### Page URL masks
+
 
 URLS = {
     'ASP': {
@@ -186,11 +185,14 @@ XPATH = {
     }
 }
 
+
 FILE_EXTENSIONS = {
     'application/pdf': 'pdf',
     'image/tiff': 'tif',
     'image/jpeg': 'jpg',
     'application/vnd.ms-powerpoint': 'pptx',
     'application/msword': 'doc',
-    'application/zip': 'zip'
+    'application/zip': 'zip',
+    'text/plain': 'txt'
 }
+

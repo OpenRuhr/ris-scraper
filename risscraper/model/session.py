@@ -32,7 +32,7 @@ class Session(Document):
     A session (Sitzung) class
     """
     def __init__(self, numeric_id, identifier=None, committee_name=None,
-                 committee_id=None, date_start=None, address=None,
+                 committee_id=None, date_start=None, room=None, address=None,
                  description=None, attachments=None):
         #self._filters.append({
         #    'fieldname': 'date_start',
@@ -43,6 +43,7 @@ class Session(Document):
         self.committee_name = committee_name
         self.committee_id = committee_id
         self.x_date_start = date_start
+        self.room = room
         self.address = address
         self.description = description
         self.attachments = attachments

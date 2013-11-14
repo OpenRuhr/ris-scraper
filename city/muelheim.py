@@ -1,43 +1,9 @@
 # encoding: utf-8
 
-"""
-Copyright (c) 2012 Marian Steinbach
+RS = "051170000000" #Mülheim
 
-Hiermit wird unentgeltlich jeder Person, die eine Kopie der Software und
-der zugehörigen Dokumentationen (die "Software") erhält, die Erlaubnis
-erteilt, sie uneingeschränkt zu benutzen, inklusive und ohne Ausnahme, dem
-Recht, sie zu verwenden, kopieren, ändern, fusionieren, verlegen
-verbreiten, unterlizenzieren und/oder zu verkaufen, und Personen, die diese
-Software erhalten, diese Rechte zu geben, unter den folgenden Bedingungen:
-
-Der obige Urheberrechtsvermerk und dieser Erlaubnisvermerk sind in allen
-Kopien oder Teilkopien der Software beizulegen.
-
-Die Software wird ohne jede ausdrückliche oder implizierte Garantie
-bereitgestellt, einschließlich der Garantie zur Benutzung für den
-vorgesehenen oder einen bestimmten Zweck sowie jeglicher Rechtsverletzung,
-jedoch nicht darauf beschränkt. In keinem Fall sind die Autoren oder
-Copyrightinhaber für jeglichen Schaden oder sonstige Ansprüche haftbar zu
-machen, ob infolge der Erfüllung eines Vertrages, eines Delikts oder anders
-im Zusammenhang mit der Software oder sonstiger Verwendung der Software
-entstanden.
-"""
-
-
-
-# RS key (Regionalschlüssel) for the administrative unit.
-#
-# This is used as a namespace prefix in order to make identifiers
-# in the system unique.
-#
-# Find the key for your German city/town/county here:
-# https://www.destatis.de/DE/ZahlenFakten/LaenderRegionen/Regionales/Gemeindeverzeichnis/Administrativ/AdministrativeUebersicht.html
-#
-# The RS can be up to 12 digits long and MUST NOT contain white space.
-# It MUST be a string, not a number, in order to preserve possible
-# leading zeroes.
-#
-RS = "082220000000"  # Mannheim
+# Stadtname für Logfile
+CITY = 'muelheim'
 
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
@@ -52,7 +18,7 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 
 # SessionNet base url, should include trailing slash
-BASE_URL = 'http://buergerinfo.mannheim.de/buergerinfo/'  # Mannheim
+BASE_URL = 'http://ratsinfo.muelheim-ruhr.de/buerger/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'
@@ -64,41 +30,55 @@ WAIT_TIME = 0.2
 # Log level (DEBUG, INFO, WARNING, ERROR or CRITICAL)
 LOG_LEVEL = 'INFO'
 # File to log to
-LOG_FILE = 'scrapearis_%s_%s.log' % (DB_NAME, RS)
+LOG_BASE_DIR = '/var/log/ris-scraper/'
+
+#Scraper Type
+SCRAPER_TYPE = 'ALLRIS'
+
 
 ###### Result normalization mapping
 
 RESULT_STRINGS = {
-    'zur Kenntnis genommen': 'KENNTNIS_GENOMMEN',
-    'einstimmig beschlossen': 'BESCHLOSSEN_EINSTIMMIG',
-    u'einstimmig mit \xc4nderung / teilweise beschlossen': 'BESCHLOSSEN_EINSTIMMIG_GEAENDERT',
-    'mit Mehrheit beschlossen': 'BESCHLOSSEN_MEHRHEIT',
-    'mehrheitlich beschlossen': 'BESCHLOSSEN_MEHRHEIT',
-    u'mehrheitlich mit \xc4nderung /teilweise beschlossen': 'BESCHLOSSEN_MEHRHEIT_GEAENDERT',
-    'in Form von WAHLEN beschlossen': 'BESCHLOSSEN_DURCH_WAHLEN',
-    'einstimmig abgelehnt': 'ABGELEHNT_EINSTIMMIG',
-    'mehrheitlich abgelehnt': 'ABGELEHNT_MEHRHEIT',
-    'im BBR beraten': 'BERATEN_BBR',
-    'verwiesen in:': 'VERWIESEN',
-    'in der Sitzung vertagt': 'VERTAGT_IN_SITZUNG',
-    u'vor Eintritt in die Tagesordnung zur\xfcckgezogen': 'ZURUECKGEZOGEN',
-    u'in der Sitzung zur\xfcckgezogen': 'ZURUECKGEZOGEN',
-    'abgesetzt': 'ABGESETZT',
-    'von der Tagesordnung abgesetzt': 'ABGESETZT',
-    'Verwaltung wird so verfahren': 'AKZEPTIERT',
-    'schriftlicher Bericht/Vorlage wurde zugesagt': 'BERICHT_ZUGESAGT',
-    'wird in der Verwaltung weiterbearbeitet': 'WEITERBEARBEITUNG_IN_VERWALTUNG',
-    'durch STELLUNGNAHME der Verwaltung erledigt': 'ERLEDIGT_STELLUNGNAHME_VERWALTUNG',
-    u'durch andere Beschl\xfcsse erledigt': 'ERLEDIGT_DURCH_ANDERE_BESCHLUESSE',
-    'ohne Empfehlung behandelt': 'BEHANDELT_OHNE_EMPFEHLUNG',
-    'Siehe Bemerkungsfeld': 'SONSTIGES',
-    'siehe Protokoll': 'SONSTIGES',
-    'Quorum wurde erreicht': 'QUORUM_ERREICHT'
+    'Die Anfrage wird schriftlich beantwortet.': 'ANFAGE_ANTWORT_SCHRIFTLICH',
+    'Die Anfrage ist schriftlich beantwortet worden.': 'ANFRAGE_BEANTWORTET_SCHRIFTLICH',
+    u'Die Anfrage ist m\xfcndlich beantwortet worden.': 'ANFAGE_BEANTWORTET_MUENDLICH',
+    u'Die Anfrage ist zur\xfcckgezogen worden.': 'ANFRAGE_RUECKZUG',
+    
+    'Die Mitteilung wird zur Kenntnis genommen.': 'MITTEILUNG_KENNTNIS',
+    
+    'Die Vorlage wird ohne Votum weitergeleitet.': 'VORLAGE_WEITERLEITUNG',
+    u'Die Entscheidung \xfcber die Vorlage wird zur\xfcckgestellt.': 'VORLAGE_ZUERUECKGESTELLT',
+    u'Die Verwaltung zieht die Vorlage zur\xfcck.': 'VORLAGE_RUECKZUG_VERWALTUNG',
+    u'Die Vorlage wird zur\xfcck \xfcberwiesen.': 'VORLAGE_UEBERWEISUNG_ZURUECK',
+    u'Die Vorlage wird an x \xfcberwiesen.': 'VORLAGE_UEBERWEISUNG',
+    'Die Vorlage wird von der Tagesordnung abgesetzt.': 'VORLAGE_ABGESETZT',
+    
+    u'Der Antrag wird zur\xfcckgezogen.': 'ANTRAG_RUECKZUG',
+    'Der Antrag ist gegenstandslos, daher keine Abstimmung.': 'ANTRAG_GEGENSTANSLOS',
+    
+
+    'kein Beratungsergebnis': 'BERATUNG_ERGEBNISLOS',
+    u'Die Beratung der Vorlage wird zur\xfcckgestellt.': 'BERATUNG_ZUERUCKGESTELLT',
+    
+    u'Die Beschlussfassung wird teilweise zur\xfcckgestellt.': 'BESCHLUSS_ZURUECKGESTELLT_TEILWEISE',
+    'Die Abstimmung erfolgte getrennt nach Unterpunkten.': 'ABSTIMMUNG_UNTERPUNKTE',
+    
+    'Abstimmungsergebnis: Einstimmig nach Beschlussvorschlag': 'BESCHLOSSEN_EINSTIMMIG',
+    u'Abstimmungsergebnis: Einstimmig nach Erg\xe4nzung des Beschlussvorschlages':'BESCHLOSSEN_EINSTIMMIG_ERGAENZUNG',
+    u'Abstimmungsergebnis: Einstimmig nach \xc4nderung des Beschlussvorschlages': 'BESCHLOSSEN_EINSTIMMIG_AENDERUNG',
+
+    'Abstimmungsergebnis: Mehrheitlich nach Beschlussvorschlag': 'BESCHLOSSEN_MEHRHEIT',
+    u'Abstimmungsergebnis: Mehrheitlich nach Erg\xe4nzung des Beschlussvorschlages':'BESCHLOSSEN_MEHRHEIT_ERGAENZUNG',
+    u'Abstimmungsergebnis: Mehrheitlich nach \xc4nderung des Beschlussvorschlages': 'BESCHLOSSEN_MEHRHEIT_AENDERUNG',
+
+    'Abstimmungsergebnis: Einstimmig gegen Beschlussvorschlag': 'ABGELEHNT_EINSTIMMIG',
+
+    'Abstimmungsergebnis: Mehrheitlich gegen Beschlussvorschlag': 'ABGELEHNT_MEHRHEIT',
+    
+    'erledigt': 'ERLEDIGT'
 }
 
-
 ##### Page URL masks
-
 
 URLS = {
     'ASP': {
@@ -189,7 +169,7 @@ XPATH = {
         'SESSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
 
         # link to committe within the session details page
-        'SESSION_DETAIL_COMMITTEE_LINK': '//a[@class="smccontextmenulink"]',
+        'SESSION_DETAIL_COMMITTEE_LINK': '//li[@class="smcmenucontext_fct_gremium"]/a',
 
         # table rows containing agendaitems on session detail page
         'SESSION_DETAIL_AGENDA_ROWS': '//*[@class="smccontenttable smc_page_to0040_contenttable"]/tbody/tr',
@@ -216,13 +196,11 @@ XPATH = {
     }
 }
 
-
 FILE_EXTENSIONS = {
     'application/pdf': 'pdf',
     'image/tiff': 'tif',
     'image/jpeg': 'jpg',
     'application/vnd.ms-powerpoint': 'pptx',
     'application/msword': 'doc',
-    'application/zip': 'zip',
-    'text/html': 'html'
+    'application/zip': 'zip'
 }
