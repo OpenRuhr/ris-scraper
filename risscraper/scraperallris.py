@@ -55,6 +55,7 @@ class ScraperAllRis(object):
     adoption_css = CSSSelector("tr.zl12:nth-child(3) > td:nth-child(5)") # selects the td which holds status information such as "beschlossen"
     top_css = CSSSelector("tr.zl12:nth-child(3) > td:nth-child(7) > form:nth-child(1) > input:nth-child(1)") # selects the td which holds the link to the TOP with transcript
     table_css = CSSSelector(".ko1 > table:nth-child(1)") # table with info block
+    attachment_1_css = CSSSelector('input[name=DOLFDNR]')
     attachments_css = CSSSelector('table.risdeco table.tk1 table.tk1 table.tk1')
     #main_css = CSSSelector("#rismain table.risdeco")
 
@@ -77,6 +78,10 @@ class ScraperAllRis(object):
         self.template_system = None
         self.urls = None
         self.xpath = None
+        
+        self.user_agent = mechanize.Browser()
+        self.user_agent.set_handle_robots(False)
+        self.user_agent.addheaders = [('User-agent', config.USER_AGENT_NAME)]
 
     def work_from_queue(self):
         """
@@ -294,7 +299,19 @@ class ScraperAllRis(object):
             submission.identifier = data['identifier']
         
         submission.attachments = []
-        # get the attachments if possible
+        # get the attachments step 1 (Drucksache)
+        attachment_1 = self.attachment_1_css(doc)
+        if len(attachment_1):
+            if attachment_1[0].value:
+                href = '%sdo027.asp' % self.config.BASE_URL
+                identifier = attachment_1[0].value
+                name = 'Drucksache'
+                attachment = Attachment(
+                    identifier=identifier,
+                    name=name)
+                attachment = self.get_attachment_file(attachment, href, True)
+                submission.attachments.append(attachment)
+        # get the attachments step 2 (additional attachments)
         attachments = self.attachments_css(doc)
         if len(attachments) > 0:
             if len(attachments[0]) > 1:
@@ -306,13 +323,13 @@ class ScraperAllRis(object):
                         identifier = str(int(link.attrib["href"].split('/')[4]))
                         attachment = Attachment(
                             identifier=identifier,
-                            name=link.text)
+                            name=name)
                         attachment = self.get_attachment_file(attachment, href)
                         submission.attachments.append(attachment)
                         
         oid = self.db.save_submission(submission)
         
-    def get_attachment_file(self, attachment, attachment_url):
+    def get_attachment_file(self, attachment, attachment_url, post=False):
         """
         Loads the attachment file from the server and stores it into
         the attachment object given as a parameter. The form
@@ -327,8 +344,11 @@ class ScraperAllRis(object):
         
         #if self.options.verbose:
         print "Getting attachment %s from %s" % (attachment.identifier, attachment_url)
-        
-        attachment_file = requests.get(attachment_url)
+
+        if post:
+            attachment_file = requests.post(attachment_url, data={'DOLFDNR': attachment.identifier, 'options': '64'})
+        else:
+            attachment_file = requests.get(attachment_url)
         attachment.content = attachment_file.content
         attachment.mimetype = magic.from_buffer(attachment.content, mime=True)
         attachment.filename = self.make_attachment_filename(attachment.identifier, attachment.mimetype)
