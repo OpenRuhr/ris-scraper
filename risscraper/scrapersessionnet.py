@@ -156,6 +156,8 @@ class ScraperSessionNet(object):
       link = tr.xpath('.//a')
       if len(link):
         parsed = parse.search(self.urls['PERSON_DETAIL_PARSE_PATTERN'], link[0].get('href'))
+        if not parsed:
+          parsed = parse.search(self.urls['PERSON_DETAIL_PARSE_PATTERN_ALT'], link[0].get('href'))
         if parsed:
           person_id = parsed['person_id']
           current_person = Person(numeric_id=person_id)
@@ -286,9 +288,17 @@ class ScraperSessionNet(object):
     for tr in trs:
       new_committee = None
       tds = tr.xpath('.//td')
+      long_info = False
       if len(tds) == 5:
+        long_info = True
+      if len(tds) == 5 or len(tds) == 2:
         if tds[0].xpath('.//a'):
           href = tds[0][0].get('href')
+          href_tmp = href.split('&')
+          # delete __cgrname when it's there
+          if len(href_tmp) == 2:
+            if href_tmp[1][0:10] == '__cgrname=':
+              href = href_tmp[0]
           parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN'], href)
           if not parsed:
             parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN_FULL'], href)
@@ -298,20 +308,24 @@ class ScraperSessionNet(object):
             new_committee['committee'].title = tds[0][0].text
         else:
           new_committee = {'committee': Committee(identifier=tds[0].text)}
-        if new_committee:
+        if new_committee and long_info:
           new_committee['position'] = tds[2].text
           if tds[3].text:
             new_committee['start'] = tds[3].text
           if tds[4].text:
             new_committee['end'] = tds[4].text
         else:
-          logging.error("Bad Table Structure in %s", person_committee_url)
-          if self.options.verbose:
-            print ("Bad Table Structure in %s" % person_committee_url)
+          if not new_committee:
+            logging.error("Bad Table Structure in %s", person_committee_url)
+            if self.options.verbose:
+              print ("Bad Table Structure in %s" % person_committee_url)
       if new_committee:
         committees.append(new_committee)
     if committees:
       person.committee = committees
+    oid = self.db.save_person(person)
+    if self.options.verbose:
+      logging.info("Person %d stored with _id %s", person_id, oid)
     return
   
   def get_meeting(self, meeting_url=None, meeting_id=None):
@@ -587,7 +601,6 @@ class ScraperSessionNet(object):
         else:
           forms = row.xpath('.//form')
           for form in forms:
-            #print "Form: ", form
             title = " ".join(row.xpath('./td/text()')).strip()
             for hidden_field in form.xpath('input'):
               if hidden_field.get('name') != 'DT':

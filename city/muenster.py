@@ -1,9 +1,9 @@
 # encoding: utf-8
 
-RS = "059110000000" #Bochum
+RS = "055150000000" #Münster
 
 # Stadtname für Logfile
-CITY = 'bochum'
+CITY = 'muenster'
 
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
@@ -18,7 +18,7 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 
 # SessionNet base url, should include trailing slash
-BASE_URL = 'https://session.bochum.de/bi/'
+BASE_URL = 'https://www.stadt-muenster.de/sessionnet/sessionnetbi/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'
@@ -39,10 +39,6 @@ SCRAPER_TYPE = 'SESSIONNET'
 
 
 PARTY_ALIAS = {
-  'GRU': u'Bündnis 90 / Die Grünen',
-  u'Grüne': u'Bündnis 90 / Die Grünen',
-  'DIE LINKE.': 'DIE LINKE',
-  "\"Zuhause in Bochum\"": 'Zuhause in Bochum' 
 }
 
 ###### Result normalization mapping
@@ -132,12 +128,12 @@ URLS = {
     # Person detail page
     'PERSON_DETAIL_PARSE_PATTERN': 'kp0051.php?__kpenr={person_id:d}',
     'PERSON_DETAIL_PRINT_PATTERN': BASE_URL + 'kp0051.php?__kpenr=%d',
+    'PERSON_DETAIL_PARSE_PATTERN_ALT': 'kp0050.php?__kpenr={person_id:d}&grnr=0',
+    'PERSON_DETAIL_PRINT_PATTERN_ALT': BASE_URL + 'kp0050.php?__kpenr=%d&grnr=0',
     
     # Person committee page kp0050.php?__cwpall=1&__kpenr=1524
     'PERSON_COMMITTEE_PARSE_PATTERN': 'kp0050.php?__cwpall=1&__kpenr={person_id:d}',
     'PERSON_COMMITTEE_PRINT_PATTERN': BASE_URL + 'kp0050.php?__cwpall=1&__kpenr=%d',
-    'PERSON_DETAIL_PARSE_PATTERN_ALT': 'kp0050.php?__kpenr={person_id:d}&grnr=0',
-    'PERSON_DETAIL_PRINT_PATTERN_ALT': BASE_URL + 'kp0050.php?__kpenr=%d&grnr=0',
 
     # Paper detail page
     'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.php?__kvonr={paper_id:d}',
@@ -188,7 +184,7 @@ XPATH = {
   },
   'PHP': {
     # session title within the session details page
-    'SESSION_DETAIL_TITLE': '//h1',
+    'SESSION_DETAIL_TITLE': '//h1[@class="smc_h1"]', #UPDATED
 
     # table fields with session identifier, comittee name and more details
     'SESSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
@@ -212,9 +208,9 @@ XPATH = {
     'SUBMISSION_DETAIL_TITLE': '//h1',
     'SUBMISSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
 
-    'PERSONLIST_LINES': '//table[@id="smc_page_kp0041_contenttable1"]//tr',
+    'PERSONLIST_LINES': '//table[@class="smccontenttable smc_page_kp0041_contenttable"]//tr', #UPDATED
     
-    'PERSON_COMMITTEE_LINES': '//table[@id="smc_page_kp0050_contenttable1"]//tr',
+    'PERSON_COMMITTEE_LINES': '//table[@class="smccontenttable smc_page_kp0050_contenttable"]//tr', #UPDATED
 
     # "Beratungsfolge" table rows
     'SUBMISSION_DETAIL_AGENDA_ROWS': '//*[@class="smccontenttable smc_page_vo0050_contenttable"]/tbody/tr',

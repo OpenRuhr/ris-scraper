@@ -227,7 +227,21 @@ class MongoDatabase(object):
   
   def ensure_index(self, ):
     pass
-  
+
+  def create_slug(self, data_dict, object_type):
+    current_slug = self.slugify(data_dict['identifier'])
+    slug_counter = 0
+    while (True):
+      dataset = self.get_object(object_type, 'slug', current_slug)
+      if dataset:
+        if data_dict['identifier'] != dataset['identifier']:
+          slug_counter += 1
+          current_slug = self.slugify(data_dict['identifier']) + '-' + str(slug_counter)
+        else:
+          return current_slug
+      else:
+        return current_slug
+
   def save_person(self, person):
     person_stored = self.get_object('person', 'numeric_id', person.numeric_id)
     person_dict = person.dict()
@@ -252,20 +266,6 @@ class MongoDatabase(object):
     
     # save data
     return self.save_object(person_dict, person_stored, 'person')
-
-  def create_slug(self, data_dict, object_type):
-    current_slug = self.slugify(data_dict['identifier'])
-    slug_counter = 0
-    while (True):
-      dataset = self.get_object(object_type, 'slug', current_slug)
-      if dataset:
-        if data_dict['identifier'] != dataset['identifier']:
-          slug_counter += 1
-          current_slug = self.slugify(data_dict['identifier']) + '-' + str(slug_counter)
-        else:
-          return current_slug
-      else:
-        return current_slug
 
   def save_committee(self, committee):
     committee_stored = self.get_object('committee', 'identifier', committee.identifier)
