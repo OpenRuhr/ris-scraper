@@ -399,7 +399,8 @@ class MongoDatabase(object):
         document_dict['identifier'] = str(document_dict['numeric_id'])
 
     # create slug
-    document_dict['slug'] = str(self.slugify(document_dict['identifier']))
+    
+    document_dict['slug'] = self.create_slug(document_dict, 'document')
     
     
     file_changed = False

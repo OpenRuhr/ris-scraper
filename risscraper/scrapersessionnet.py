@@ -397,18 +397,18 @@ class ScraperSessionNet(object):
       raise TemplateError('Cannot find session title element using XPath SESSION_DETAIL_TITLE')
   
     # Committe link
-    try:
-      links = dom.xpath(self.xpath['SESSION_DETAIL_COMMITTEE_LINK'])
-      for link in links:
-        href = link.get('href')
-        parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN'], href)
-        if parsed is not None:
-          meeting.committees = [Commitee(numeric_id=int(parsed['committee_id']))]
-          if hasattr(self, 'committee_queue'):
-            self.committee_queue.add(int(parsed['committee_id']))
-    except:
-      logging.critical('Cannot find link to committee detail page using SESSION_DETAIL_COMMITTEE_LINK_XPATH')
-      raise TemplateError('Cannot find link to committee detail page using SESSION_DETAIL_COMMITTEE_LINK_XPATH')
+    #try:
+    #  links = dom.xpath(self.xpath['SESSION_DETAIL_COMMITTEE_LINK'])
+    #  for link in links:
+    #    href = link.get('href')
+    #    parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN'], href)
+    #    if parsed is not None:
+    #      meeting.committees = [Commitee(numeric_id=int(parsed['committee_id']))]
+    #      if hasattr(self, 'committee_queue'):
+    #        self.committee_queue.add(int(parsed['committee_id']))
+    #except:
+    #  logging.critical('Cannot find link to committee detail page using SESSION_DETAIL_COMMITTEE_LINK_XPATH')
+    #  raise TemplateError('Cannot find link to committee detail page using SESSION_DETAIL_COMMITTEE_LINK_XPATH')
   
     # Meeting identifier, date, address etc
     tds = dom.xpath(self.xpath['SESSION_DETAIL_IDENTIFIER_TD'])
@@ -546,7 +546,7 @@ class ScraperSessionNet(object):
                 if self.options.verbose:
                   print "WARNING: String '%s' not found in RESULT_STRINGS\n" % value
               agendaitem.result = value
-            elif label == 'Bemerkung:':
+            elif label in ['Bemerkung:', 'Abstimmung:']:
               agendaitem.result_details = value
             # What's this?
             #elif label == 'Abstimmung:':
