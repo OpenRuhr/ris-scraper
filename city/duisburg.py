@@ -10,7 +10,7 @@ CITY = 'duisburg'
 DB_TYPE = 'mongodb'
 
 # Name of the MongoDB database
-DB_NAME = 'scrapearis'
+DB_NAME = 'ris'
 
 # Use "localhost" if MongoDB is running on the same machine
 DB_HOST = 'localhost'
@@ -32,6 +32,9 @@ WAIT_TIME = 0.2
 LOG_LEVEL = 'INFO'
 # File to log to
 LOG_BASE_DIR = '/var/log/ris-scraper/'
+
+#Scraper Type
+SCRAPER_TYPE = 'SESSIONNET'
 
 ###### Result normalization mapping
 
@@ -74,7 +77,7 @@ URLS = {
         'CALENDAR_MONTH_PRINT_PATTERN': BASE_URL + 'si0040.asp?__cjahr=%d&__cmonat=%d',
 
         # Session detail page
-        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.asp?__ksinr={session_id:d}',
+        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.asp?__ksinr={meeting_id:d}',
         'SESSION_DETAIL_PRINT_PATTERN': BASE_URL + 'to0040.asp?__ksinr=%d',
 
         # Committee detail page
@@ -82,7 +85,7 @@ URLS = {
         'COMMITTEE_DETAIL_PRINT_PATTERN': BASE_URL + 'kp0040.asp?__kgrnr=%d',
 
         # Submission detail page
-        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.asp?__kvonr={submission_id:d}',
+        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.asp?__kvonr={paper_id:d}',
         'SUBMISSION_DETAIL_PRINT_PATTERN': BASE_URL + 'vo0050.asp?__kvonr=%d',
 
         # Attachment file download target file name(s)
@@ -94,7 +97,7 @@ URLS = {
         'CALENDAR_MONTH_PRINT_PATTERN': BASE_URL + 'si0040.php?__cjahr=%d&__cmonat=%d',
 
         # Session detail page
-        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.php?__ksinr={session_id:d}',
+        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.php?__ksinr={meeting_id:d}',
         'SESSION_DETAIL_PRINT_PATTERN': BASE_URL + 'to0040.php?__ksinr=%d',
 
         # Committee detail page
@@ -102,7 +105,7 @@ URLS = {
         'COMMITTEE_DETAIL_PRINT_PATTERN': BASE_URL + 'kp0040.php?__kgrnr=%d',
 
         # Submission detail page
-        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.php?__kvonr={submission_id:d}',
+        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.php?__kvonr={paper_id:d}',
         'SUBMISSION_DETAIL_PRINT_PATTERN': BASE_URL + 'vo0050.php?__kvonr=%d',
 
         # Attachment file download target file name

@@ -24,39 +24,16 @@ entstanden.
 """
 
 from base import Base
-import hashlib
+import filters
 
 
-class Document(Base):
+class Body(Base):
   """
-  An document class
+  A body class
   """
-  def __init__(self, identifier=None, numeric_id=None, title=None, size=None,
-      mime_type=None, date=None, last_modified=None, sha1_checksum=None, original_url=None,
-      slug=None, content=None):
+  def __init__(self, identifier=None, rs=None, title=None, last_modified=None):
     self.identifier = identifier
-    self.numeric_id = numeric_id
+    self.rs = rs
     self.title = title
-    self.x_content = content
-    self.mime_type = mime_type
-    self.date = date
     self.last_modified = last_modified
-    self.sha1_checksum = sha1_checksum
-    self.size = size
-    self.slug = slug
-    self.original_url = original_url
-    super(Document, self).__init__()
-
-  @property
-  def content(self):
-    return self.x_content
-
-  @content.setter
-  def content(self, value):
-    self.x_content = value
-    if value is None:
-      self.size = None
-      self.sha1_checksum = None
-    else:
-      self.size = len(value)
-      self.sha1_checksum = hashlib.sha1(value).hexdigest()
+    super(Body, self).__init__()

@@ -1,12 +1,16 @@
 # encoding: utf-8
 
-RS = "051240000000"
+RS = "051240000000"  # Stadt Wuppertal
+
+
+# Stadtname für Logfile
+CITY = 'wuppertal'
 
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
 
 # Name of the MongoDB database
-DB_NAME = 'scrapearis'
+DB_NAME = 'ris'
 
 # Use "localhost" if MongoDB is running on the same machine
 DB_HOST = 'localhost'
@@ -14,39 +18,33 @@ DB_HOST = 'localhost'
 # MongoDB default port is 27017
 DB_PORT = 27017
 
-# Not used for MongoDB
-DB_USER = ''
-DB_PASS = ''
-
 # SessionNet base url, should include trailing slash
 BASE_URL = 'http://www.wuppertal.de/rathaus/onlinedienste/ris/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'
 
-# Folder where attachments will be stored
-ATTACHMENT_FOLDER = 'cache/attachments/' + RS
+# Number of seconds to wait between requests. Increase this
+# if the systems behaves unstable (seconds)
+WAIT_TIME = 0.2
 
-# This requires you to have the tika Jar in the specified location.
-# This will start the Java Runtime environment with the Jar for
-# every file that will be processed. If you want the faster version,
-# comment this out and use the server version described below.
-#
-TIKA_COMMAND = 'java -jar bin/tika-app-1.3.jar -eutf8 -t'
+# Log level (DEBUG, INFO, WARNING, ERROR or CRITICAL)
+LOG_LEVEL = 'INFO'
+# File to log to
+LOG_BASE_DIR = '/var/log/ris-scraper/'
 
-# If you prefer fast content extraction, start Tika as a server
-# before running the scraper. Use a command like this:
-#
-# > java -jar bin/tika-app-1.3.jar -s -eutf8 -t 55555
-#
-# Make sure to set the according port below:
-#
-TIKA_SERVER = 'localhost'
-TIKA_PORT = 55555
-# ^ (The server option is not implemented yet!)
+#Scraper Type
+SCRAPER_TYPE = 'SESSIONNET'
+
+###### Result normalization mapping
+
+RESULT_STRINGS = {
+
+}
 
 
 ##### Page URL masks
+
 
 URLS = {
     'ASP': {
@@ -55,7 +53,7 @@ URLS = {
         'CALENDAR_MONTH_PRINT_PATTERN': BASE_URL + 'si0040.asp?__cjahr=%d&__cmonat=%d',
 
         # Session detail page
-        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.asp?__ksinr={session_id:d}',
+        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.asp?__ksinr={meeting_id:d}',
         'SESSION_DETAIL_PRINT_PATTERN': BASE_URL + 'to0040.asp?__ksinr=%d',
 
         # Committee detail page
@@ -63,7 +61,7 @@ URLS = {
         'COMMITTEE_DETAIL_PRINT_PATTERN': BASE_URL + 'kp0040.asp?__kgrnr=%d',
 
         # Submission detail page
-        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.asp?__kvonr={submission_id:d}',
+        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.asp?__kvonr={paper_id:d}',
         'SUBMISSION_DETAIL_PRINT_PATTERN': BASE_URL + 'vo0050.asp?__kvonr=%d',
 
         # Attachment file download target file name(s)
@@ -75,7 +73,7 @@ URLS = {
         'CALENDAR_MONTH_PRINT_PATTERN': BASE_URL + 'si0040.php?__cjahr=%d&__cmonat=%d',
 
         # Session detail page
-        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.php?__ksinr={session_id:d}',
+        'SESSION_DETAIL_PARSE_PATTERN': 'to0040.php?__ksinr={meeting_id:d}',
         'SESSION_DETAIL_PRINT_PATTERN': BASE_URL + 'to0040.php?__ksinr=%d',
 
         # Committee detail page
@@ -83,7 +81,7 @@ URLS = {
         'COMMITTEE_DETAIL_PRINT_PATTERN': BASE_URL + 'kp0040.php?__kgrnr=%d',
 
         # Submission detail page
-        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.php?__kvonr={submission_id:d}',
+        'SUBMISSION_DETAIL_PARSE_PATTERN': 'vo0050.php?__kvonr={paper_id:d}',
         'SUBMISSION_DETAIL_PRINT_PATTERN': BASE_URL + 'vo0050.php?__kvonr=%d',
 
         # Attachment file download target file name
@@ -165,35 +163,13 @@ XPATH = {
 }
 
 
-###### Result normalization mapping
-
-RESULT_STRINGS = {
-    'zur Kenntnis genommen': 'KENNTNIS_GENOMMEN',
-    'einstimmig beschlossen': 'BESCHLOSSEN_EINSTIMMIG',
-    u'einstimmig mit \xc4nderung / teilweise beschlossen': 'BESCHLOSSEN_EINSTIMMIG_GEAENDERT',
-    'mit Mehrheit beschlossen': 'BESCHLOSSEN_MEHRHEIT',
-    'mehrheitlich beschlossen': 'BESCHLOSSEN_MEHRHEIT',
-    u'mehrheitlich mit \xc4nderung /teilweise beschlossen': 'BESCHLOSSEN_MEHRHEIT_GEAENDERT',
-    'in Form von WAHLEN beschlossen': 'BESCHLOSSEN_DURCH_WAHLEN',
-    'einstimmig abgelehnt': 'ABGELEHNT_EINSTIMMIG',
-    'mehrheitlich abgelehnt': 'ABGELEHNT_MEHRHEIT',
-    'verwiesen in:': 'VERWIESEN',
-    'in der Sitzung vertagt': 'VERTAGT_IN_SITZUNG',
-    u'vor Eintritt in die Tagesordnung zur\xfcckgezogen': 'ZURUECKGEZOGEN',
-    u'in der Sitzung zur\xfcckgezogen': 'ZURUECKGEZOGEN',
-    'abgesetzt': 'ABGESETZT',
-    'von der Tagesordnung abgesetzt': 'ABGESETZT',
-    'Verwaltung wird so verfahren': 'AKZEPTIERT',
-    'schriftlicher Bericht/Vorlage wurde zugesagt': 'BERICHT_ZUGESAGT',
-    'wird in der Verwaltung weiterbearbeitet': 'WEITERBEARBEITUNG_IN_VERWALTUNG',
-    'durch STELLUNGNAHME der Verwaltung erledigt': 'ERLEDIGT_STELLUNGNAHME_VERWALTUNG',
-    u'durch andere Beschl\xfcsse erledigt': 'ERLEDIGT_DURCH_ANDERE_BESCHLUESSE',
-    'ohne Empfehlung behandelt': 'BEHANDELT_OHNE_EMPFEHLUNG',
-    'Siehe Bemerkungsfeld': 'SONSTIGES',
-    'siehe Protokoll': 'SONSTIGES',
-    'Quorum wurde erreicht': 'QUORUM_ERREICHT'
+FILE_EXTENSIONS = {
+    'application/pdf': 'pdf',
+    'image/tiff': 'tif',
+    'image/jpeg': 'jpg',
+    'application/vnd.ms-powerpoint': 'pptx',
+    'application/msword': 'doc',
+    'application/zip': 'zip',
+    'text/plain': 'txt'
 }
 
-# Number of seconds to wait between requests. Increase this
-# if the systems behaves unstable (seconds)
-WAIT_TIME = 0.2

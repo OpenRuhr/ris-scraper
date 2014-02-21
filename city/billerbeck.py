@@ -1,9 +1,10 @@
 # encoding: utf-8
 
-RS = "053150000000"
+RS = "055580008008"  # Stadt Billerbeck
+
 
 # Stadtname für Logfile
-CITY = 'koeln'
+CITY = 'billerbeck'
 
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
@@ -18,7 +19,7 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 
 # SessionNet base url, should include trailing slash
-BASE_URL = 'http://ratsinformation.stadt-koeln.de/'
+BASE_URL = 'https://ratsinfo.billerbeck.de/net/buergerinfo/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'
@@ -29,14 +30,21 @@ WAIT_TIME = 0.2
 
 # Log level (DEBUG, INFO, WARNING, ERROR or CRITICAL)
 LOG_LEVEL = 'INFO'
-
 # File to log to
 LOG_BASE_DIR = '/var/log/ris-scraper/'
 
 #Scraper Type
 SCRAPER_TYPE = 'SESSIONNET'
 
+###### Result normalization mapping
+
+RESULT_STRINGS = {
+
+}
+
+
 ##### Page URL masks
+
 
 URLS = {
     'ASP': {
@@ -57,7 +65,7 @@ URLS = {
         'SUBMISSION_DETAIL_PRINT_PATTERN': BASE_URL + 'vo0050.asp?__kvonr=%d',
 
         # Attachment file download target file name(s)
-        'ATTACHMENT_DOWNLOAD_TARGET': ['ydocstart.asp', 'getfile.asp']
+        'ATTACHMENT_DOWNLOAD_TARGET': ['getfile.asp']
     },
     'PHP': {
         # Month calender page
@@ -81,8 +89,8 @@ URLS = {
     }
 }
 
-##### XPATH strings to find elements within pages
 
+##### XPATH strings to find elements within pages
 
 XPATH = {
     'ASP': {
@@ -93,12 +101,10 @@ XPATH = {
         'SESSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
 
         # link to committe within the session details page
-        #'SESSION_DETAIL_COMMITTEE_LINK': '//li[@class="smcmenucontext_fct_gremium"]/a',
-        'SESSION_DETAIL_COMMITTEE_LINK': '//a[@class="smccontextmenulink"]',
+        'SESSION_DETAIL_COMMITTEE_LINK': '//li[@class="smcmenucontext_fct_gremium"]/a',
 
         # table rows containing agendaitems on session detail page
-        #'SESSION_DETAIL_AGENDA_ROWS': '//*[@id="smc_page_to0040_contenttable1"]/tbody/tr',
-        'SESSION_DETAIL_AGENDA_ROWS': '//*[@class="smccontenttable smc_page_to0040_contenttable"]/tbody/tr',
+        'SESSION_DETAIL_AGENDA_ROWS': '//*[@id="smc_page_to0040_contenttable1"]/tbody/tr',
 
         # link to submission in agenda item row on session detail page
         'SESSION_DETAIL_AGENDA_ROWS_SUBMISSION_LINK': 'td/a',
@@ -129,9 +135,8 @@ XPATH = {
         'SESSION_DETAIL_IDENTIFIER_TD': '//*[@id="smctablevorgang"]/tbody//td',
 
         # link to committe within the session details page
-        #'SESSION_DETAIL_COMMITTEE_LINK': '//li[@class="smcmenucontext_fct_gremium"]/a',
         'SESSION_DETAIL_COMMITTEE_LINK': '//a[@class="smccontextmenulink"]',
-        
+
         # table rows containing agendaitems on session detail page
         'SESSION_DETAIL_AGENDA_ROWS': '//*[@class="smccontenttable smc_page_to0040_contenttable"]/tbody/tr',
 
@@ -157,11 +162,6 @@ XPATH = {
     }
 }
 
-###### Result normalization mapping
-
-RESULT_STRINGS = {
-    
-}
 
 FILE_EXTENSIONS = {
     'application/pdf': 'pdf',
@@ -169,5 +169,7 @@ FILE_EXTENSIONS = {
     'image/jpeg': 'jpg',
     'application/vnd.ms-powerpoint': 'pptx',
     'application/msword': 'doc',
-    'application/zip': 'zip'
+    'application/zip': 'zip',
+    'text/plain': 'txt'
 }
+

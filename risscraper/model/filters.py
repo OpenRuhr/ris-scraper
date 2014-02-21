@@ -25,39 +25,37 @@ entstanden.
 
 import parse
 import datetime
+from pytz import timezone
 
 
 def remove_whitespace(string):
-    #print "remove_whitespace: '%s'" % string
-    return string.replace(' ', '')
+  return string.replace(' ', '')
 
 
 def datestring_to_datetime(inp):
-    """
-    Convert a date/time string do proper start (and optionally end) datetime
-    """
-    if type(inp) in [str, unicode]:
-        string = inp.strip()
-        format = '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}-{hourend:d}:{minuteend:d}'
+  """
+  Convert a date/time string do proper start (and optionally end) datetime
+  """
+  berlin = timezone('Europe/Berlin')
+  if type(inp) in [str, unicode]:
+    string = inp.strip()
+    format = '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}-{hourend:d}:{minuteend:d}'
+    p = parse.parse(format, string)
+    if p is not None:
+      out = datetime.datetime(p['year'], p['month'], p['day'], p['hour'], p['minute'], tzinfo=berlin)
+      return out
+    else:
+      format = '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}'
+      p = parse.parse(format, string)
+      if p is not None:
+        out = datetime.datetime(p['year'], p['month'], p['day'], p['hour'], p['minute'], tzinfo=berlin)
+        return out
+      else:
+        format = '{day:d}.{month:d}.{year:d}'
         p = parse.parse(format, string)
         if p is not None:
-            out = datetime.datetime(p['year'], p['month'], p['day'], p['hour'], p['minute'])
-            #sys.stdout.write("\nA p: %s, datetime: %s\n" % (p, out.isoformat()))
-            return out
+          out = datetime.datetime(p['year'], p['month'], p['day'], 0, 0, tzinfo=berlin)
+          return out
         else:
-            format = '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}'
-            p = parse.parse(format, string)
-            if p is not None:
-                out = datetime.datetime(p['year'], p['month'], p['day'], p['hour'], p['minute'])
-                #sys.stdout.write("\nB p: %s, datetime: %s\n" % (p, out.isoformat()))
-                return out
-            else:
-                format = '{day:d}.{month:d}.{year:d}'
-                p = parse.parse(format, string)
-                if p is not None:
-                    out = datetime.datetime(p['year'], p['month'], p['day'], 0, 0)
-                    #sys.stdout.write("\nB p: %s, datetime: %s\n" % (p, out.isoformat()))
-                    return out
-                else:
-                    return None
-    return inp
+          return None
+  return inp

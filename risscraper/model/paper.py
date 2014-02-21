@@ -24,39 +24,47 @@ entstanden.
 """
 
 from base import Base
-import hashlib
+import filters
 
 
-class Document(Base):
+class Paper(Base):
   """
-  An document class
+  A paper class
   """
-  def __init__(self, identifier=None, numeric_id=None, title=None, size=None,
-      mime_type=None, date=None, last_modified=None, sha1_checksum=None, original_url=None,
-      slug=None, content=None):
+  def __init__(self, identifier=None, numeric_id=None, reference_number=None, title=None, type=None, date=None, original_url=None,
+      paper=None, document=None):
     self.identifier = identifier
     self.numeric_id = numeric_id
-    self.title = title
-    self.x_content = content
-    self.mime_type = mime_type
-    self.date = date
-    self.last_modified = last_modified
-    self.sha1_checksum = sha1_checksum
-    self.size = size
-    self.slug = slug
+    self.reference_number = reference_number
+    self.x_title = title
+    self.type = type
+    self.x_date = date
     self.original_url = original_url
-    super(Document, self).__init__()
+    # Relations
+    self.document = document
+    self.paper = paper
+    super(Paper, self).__init__()
 
   @property
-  def content(self):
-    return self.x_content
+  def date(self):
+    """Fancy getter for the date property"""
+    return self.x_date
 
-  @content.setter
-  def content(self, value):
-    self.x_content = value
-    if value is None:
-      self.size = None
-      self.sha1_checksum = None
+  @date.setter
+  def date(self, value):
+    """
+    Fancy setter for the x_date property, which
+    applies a string-to-datetime filter if necessary
+    """
+    if type(value) == str:
+      self.x_date = filters.datestring_to_datetime(value)
     else:
-      self.size = len(value)
-      self.sha1_checksum = hashlib.sha1(value).hexdigest()
+      self.x_date = value
+
+  @property
+  def title(self):
+    return self.x_title
+
+  @title.setter
+  def title(self, value):
+    self.x_title = value.strip()

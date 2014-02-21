@@ -24,39 +24,26 @@ entstanden.
 """
 
 from base import Base
-import hashlib
+import filters
 
 
-class Document(Base):
+class Agendaitem(Base):
   """
-  An document class
+  A agendaitem class
   """
-  def __init__(self, identifier=None, numeric_id=None, title=None, size=None,
-      mime_type=None, date=None, last_modified=None, sha1_checksum=None, original_url=None,
-      slug=None, content=None):
+  def __init__(self, identifier=None, numeric_id=None, sequence_number = None, public=None,
+      title=None, result=None, result_details=None, resolution_text=None, original_url=None,
+      meeting=None, paper=None):
     self.identifier = identifier
     self.numeric_id = numeric_id
+    self.sequence_number = sequence_number
+    self.public = public
     self.title = title
-    self.x_content = content
-    self.mime_type = mime_type
-    self.date = date
-    self.last_modified = last_modified
-    self.sha1_checksum = sha1_checksum
-    self.size = size
-    self.slug = slug
+    self.result = result
+    self.result_details = result_details
+    self.resolution_text = resolution_text
     self.original_url = original_url
-    super(Document, self).__init__()
-
-  @property
-  def content(self):
-    return self.x_content
-
-  @content.setter
-  def content(self, value):
-    self.x_content = value
-    if value is None:
-      self.size = None
-      self.sha1_checksum = None
-    else:
-      self.size = len(value)
-      self.sha1_checksum = hashlib.sha1(value).hexdigest()
+    # Relations
+    self.meeting = meeting
+    self.paper = paper
+    super(Agendaitem, self).__init__()

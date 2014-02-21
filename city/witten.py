@@ -9,7 +9,7 @@ CITY = 'witten'
 DB_TYPE = 'mongodb'
 
 # Name of the MongoDB database
-DB_NAME = 'scrapearis'
+DB_NAME = 'ris'
 
 # Use "localhost" if MongoDB is running on the same machine
 DB_HOST = 'localhost'
@@ -29,8 +29,12 @@ WAIT_TIME = 0.2
 
 # Log level (DEBUG, INFO, WARNING, ERROR or CRITICAL)
 LOG_LEVEL = 'INFO'
+
 # File to log to
 LOG_BASE_DIR = '/var/log/ris-scraper/'
+
+#Scraper Type
+SCRAPER_TYPE = 'SESSIONNET'
 
 ##### Page URL masks
 

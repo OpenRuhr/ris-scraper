@@ -1,9 +1,9 @@
 # encoding: utf-8
 
-RS = "110020002002"  # Berlin Friedrichshain-Kreuzberg
+RS = "110080008008"  # Berlin Neukölln
 
 # Stadtname für Logfile
-CITY = 'berlin-friedrichshain-kreuzberg'
+CITY = 'berlin-neukoelln'
 
 # Currently, only "mongodb" is supported
 DB_TYPE = 'mongodb'
@@ -18,7 +18,7 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 
 # SessionNet base url, should include trailing slash
-BASE_URL = 'http://www.berlin.de/ba-friedrichshain-kreuzberg/bvv-online/'
+BASE_URL = 'http://www.berlin.de/ba-neukoelln/bvv-online/'
 
 # Name to identify your crawler to the server
 USER_AGENT_NAME = 'scrape-a-ris/0.1'

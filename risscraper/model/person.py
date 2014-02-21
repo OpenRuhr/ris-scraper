@@ -24,39 +24,42 @@ entstanden.
 """
 
 from base import Base
-import hashlib
+import filters
 
 
-class Document(Base):
+class Person(Base):
   """
-  An document class
+  A committee class
   """
-  def __init__(self, identifier=None, numeric_id=None, title=None, size=None,
-      mime_type=None, date=None, last_modified=None, sha1_checksum=None, original_url=None,
-      slug=None, content=None):
+  def __init__(self, identifier=None, numeric_id=None, title=None, title_short=None,
+      firstname=None, lastname=None, original_url=None, last_modified=None, committee=None):
     self.identifier = identifier
     self.numeric_id = numeric_id
     self.title = title
-    self.x_content = content
-    self.mime_type = mime_type
-    self.date = date
-    self.last_modified = last_modified
-    self.sha1_checksum = sha1_checksum
-    self.size = size
-    self.slug = slug
+    self.firstname = firstname
+    self.lastname = lastname
     self.original_url = original_url
-    super(Document, self).__init__()
+    self.last_modified = last_modified
+    self.x_committee = committee
+    super(Person, self).__init__()
+
 
   @property
-  def content(self):
-    return self.x_content
+  def committee(self):
+    """Fancy getter for the x_date_start property"""
+    return self.x_committee
 
-  @content.setter
-  def content(self, value):
-    self.x_content = value
-    if value is None:
-      self.size = None
-      self.sha1_checksum = None
-    else:
-      self.size = len(value)
-      self.sha1_checksum = hashlib.sha1(value).hexdigest()
+  @committee.setter
+  def committee(self, value):
+    """
+    Fancy setter for the x_start property, which
+    applies a string-to-datetime filter if ecessary
+    """
+    for i in range(len(value)):
+      if 'start' in value[i]:
+        if type(value[i]['start']) == str:
+          value[i]['start'] = filters.datestring_to_datetime(value[i]['start'])
+      if 'start' in value[i]:
+        if type(value[i]['start']) == str:
+          value[i]['start'] = filters.datestring_to_datetime(value[i]['start'])
+    self.x_committee = value

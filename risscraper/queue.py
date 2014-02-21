@@ -178,8 +178,8 @@ class Queue(object):
         self.db.queue.remove(query)
 
 
+""" Zeugs
 if __name__ == '__main__':
-    """Tests"""
     connection = MongoClient()
     db = connection.test
     class cfg(object):
@@ -206,3 +206,4 @@ if __name__ == '__main__':
     q.mark_failed(job3)
     q.mark_failed(job3)
     q.garbage_collect()
+"""
