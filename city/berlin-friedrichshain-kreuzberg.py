@@ -9,7 +9,7 @@ CITY = 'berlin-friedrichshain-kreuzberg'
 DB_TYPE = 'mongodb'
 
 # Name of the MongoDB database
-DB_NAME = 'scrapearis'
+DB_NAME = 'ris'
 
 # Use "localhost" if MongoDB is running on the same machine
 DB_HOST = 'localhost'
@@ -38,16 +38,26 @@ SCRAPER_TYPE = 'ALLRIS'
 ###### Result normalization mapping
 
 RESULT_STRINGS = {
+  'beantwortet': '',
+  '(offen)': '',
+  'schriftlich beantwortet': '',
+  u'ohne Änderungen in der BVV beschlossen': '',
+  'gewählt': '',
+  u'überwiesen': '',
+  'mit Abschlussbericht zur Kenntnis genommen': ''
 }
 
+MEETING_TYPE = {
+  u'außerordentliche': 'EXTRAORDINARY'
+}
 
 FILE_EXTENSIONS = {
-    'application/pdf': 'pdf',
-    'image/tiff': 'tif',
-    'image/jpeg': 'jpg',
-    'application/vnd.ms-powerpoint': 'pptx',
-    'application/msword': 'doc',
-    'application/zip': 'zip',
-    'text/plain': 'txt'
+  'application/pdf': 'pdf',
+  'image/tiff': 'tif',
+  'image/jpeg': 'jpg',
+  'application/vnd.ms-powerpoint': 'pptx',
+  'application/msword': 'doc',
+  'application/zip': 'zip',
+  'text/plain': 'txt'
 }
 

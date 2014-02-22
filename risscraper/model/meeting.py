@@ -32,7 +32,7 @@ class Meeting(Base):
   A meeting class
   """
   def __init__(self, identifier=None, numeric_id = None, title=None,
-      start=None, end=None, sequence_number=None, room=None, address=None, original_url=None,
+      start=None, end=None, sequence_number=None, type=None, room=None, address=None, original_url=None,
       committee=None, person=None, agendaitem=None, paper=None, document=None):
     self.identifier = identifier
     self.numeric_id = numeric_id
@@ -40,6 +40,7 @@ class Meeting(Base):
     self.x_start = start
     self.x_end = end
     self.sequence_number = sequence_number
+    self.type = type
     self.room = room
     self.address = address
     self.original_url = original_url

@@ -29,9 +29,6 @@ import parse
 import datetime
 import time
 import queue
-from model.session import Session
-from model.attachment import Attachment
-from model.submission import Submission
 import sys
 from lxml import etree, html
 from lxml.cssselect import CSSSelector
@@ -44,7 +41,16 @@ import logging
 import requests
 import pytz
 import re
-import traceback
+from pytz import timezone
+
+
+from model.agendaitem import Agendaitem
+from model.body import Body
+from model.committee import Committee
+from model.document import Document
+from model.meeting import Meeting
+from model.paper import Paper
+from model.person import Person
 
 class ScraperAllRis(object):
   
@@ -59,9 +65,7 @@ class ScraperAllRis(object):
   attachment_1_css = CSSSelector('input[name=DOLFDNR]')
   attachments_css = CSSSelector('table.risdeco table.tk1 table.tk1 table.tk1')
   #main_css = CSSSelector("#rismain table.risdeco")
-  found_meetings = []
-  found_agendaitems = []
-  found_papers = []
+
 
   def __init__(self, config, db, options):
     # configuration
@@ -76,8 +80,9 @@ class ScraperAllRis(object):
     self.user_agent.addheaders = [('User-agent', config.USER_AGENT_NAME)]
     # Queues
     if self.options.workfromqueue:
-      self.meeting_queue = queue.Queue('ALLRIS_SESSIONS', config, db)
-      self.paper_queue = queue.Queue('ALLRIS_SUBMISSIONS', config, db)
+      self.person_queue = queue.Queue('ALLRIS_PERSON', config, db)
+      self.meeting_queue = queue.Queue('ALLRIS_MEETING', config, db)
+      self.paper_queue = queue.Queue('ALLRIS_PAPER', config, db)
     # system info (PHP/ASP)
     self.template_system = None
     self.urls = None
@@ -91,9 +96,14 @@ class ScraperAllRis(object):
     """
     Empty queues if they have values. Queues are emptied in the
     following order:
-    1. Meetings
-    2. Papers
+    1. Paper
+    2. Meetings
+    3. Papers
     """
+    while self.person_queue.has_next():
+      job = self.person_queue.get()
+      self.get_person(person_id=job['key'])
+      self.person_queue.resolve_job(job)
     while self.meeting_queue.has_next():
       job = self.meeting_queue.get()
       self.get_meeting(meeting_id=job['key'])
@@ -117,7 +127,10 @@ class ScraperAllRis(object):
     if self.options.verbose:
       print "Nothing to guess until now"
 
-  def find_meetings(self, start_date=None, end_date=None):
+  def find_person(self):
+    pass
+  
+  def find_meeting(self, start_date=None, end_date=None):
     """
     Find meetings within a given time frame and add them to the meeting queue.
     """
@@ -127,7 +140,11 @@ class ScraperAllRis(object):
     
     
     parser = etree.XMLParser(recover=True)
-    r = requests.get(meeting_url)
+    
+    r = self.get_url(meeting_url)
+    if not r:
+      return
+    
     xml = r.text.encode('ascii','xmlcharrefreplace') 
     root = etree.fromstring(xml, parser=parser)
 
@@ -135,7 +152,7 @@ class ScraperAllRis(object):
       raw_meeting = {}
       for e in item.iterchildren():
         raw_meeting[e.tag] = e.text
-      meeting = Session(int(raw_meeting['silfdnr']))
+      meeting = Meeting(numeric_id=int(raw_meeting['silfdnr']), identifier=int(raw_meeting['silfdnr']))
       meeting.date_start = self.parse_date(raw_meeting['sisbvcs'])
       meeting.date_end = self.parse_date(raw_meeting['sisevcs'])
       meeting.identifier = raw_meeting['siname']
@@ -144,19 +161,27 @@ class ScraperAllRis(object):
       meeting.committee_name = raw_meeting['grname']
       meeting.description = raw_meeting['sitext']
       oid = self.db.save_meeting(meeting)
-      self.found_meetings.append(meeting.numeric_id)
       self.meeting_queue.add(meeting.numeric_id)
+      
+
+  def get_committee(self, committee_id=None, committee_url=None):
+    pass
   
+  def get_person(self, person_id=None, person_url=None):
+    pass
+
   def get_meeting(self, meeting_url=None, meeting_id=None):
     """
-    Load meeting details = agendaitems for the given detail page URL or numeric ID
+    Load meeting details (e.g. agendaitems) for the given detail page URL or numeric ID
     """
-    meeting_url = "%sto010.asp?selfaction=ws&template=xyz&SILFDNR=%s" % (self.config.BASE_URL, session_id)
+    meeting_url = "%sto010.asp?selfaction=ws&template=xyz&SILFDNR=%s" % (self.config.BASE_URL, meeting_id)
     
     logging.info("Getting meeting %d from %s", meeting_id, meeting_url)
     print "Getting meeting %d from %s" %( meeting_id, meeting_url)
     
-    r = requests.get(meeting_url)
+    r = self.get_url(meeting_url)
+    if not r:
+      return
     # If r.history has an item we have a problem
     if len(r.history):
       if r.history[0].status_code == 302:
@@ -171,18 +196,31 @@ class ScraperAllRis(object):
     root = etree.fromstring(xml, parser=parser)
     
     meeting = Meeting(numeric_id=meeting_id)
-    record = {'tops' : []}
 
+    # special area
     special = {}
-    for item in root[1].iterchildren():
+    for item in root[0].iterchildren():
       special[item.tag] = item.text
-    record['special'] = special
-    if 'raname' in special:
-      meeting.room = special['raname']
-    if 'raort' in special:
-      meeting.address = special['raort']
-    
+    # Woher kriegen wir das Datum? Nur über die Übersicht?
+    #if 'sisb' in special:
+    #if 'sise' in special:
+    if 'saname' in special:
+      if special['saname'] in self.config.MEETING_TYPE:
+        meeting.type = self.config.MEETING_TYPE[special['saname']]
+      else:
+        logging.warn("String '%s' not found in MEETING_TYPE", special['saname'])
+        if self.options.verbose:
+          print "WARNING: String '%s' not found in MEETING_TYPE\n" % special['saname']
+    # head area
+    head = {}
+    for item in root[0].iterchildren():
+      head[item.tag] = item.text
+    if 'raname' in head:
+      meeting.room = head['raname']
+    if 'raort' in head:
+      meeting.address = head['raort']
     agendaitems = []
+    
     for item in root[2].iterchildren():
       elem = {}
       for e in item.iterchildren():
@@ -195,7 +233,6 @@ class ScraperAllRis(object):
       
       #agendaitem = elem['topnr']
       agendaitem.numeric_id = int(elem['tolfdnr'])
-      self.found_to.append(agendaitem['id'])
       if elem['toostLang'] == u'öffentlich':
         agendaitem.public = True
       else:
@@ -204,10 +241,14 @@ class ScraperAllRis(object):
       # get agenda detail page
       # TODO: Own Queue
       time.sleep(self.config.WAIT_TIME)
-      agendaitem_url = '%sto020.asp?selfaction=ws&template=xyz&TOLFDNR=%s' % (self.config.BASE_URL, agendaitem['id'])
-      logging.info("Getting agendaitem %d from %s", agendaitem['id'], agendaitem_url)
-      print "Getting agendaitem %d from %s" % (agendaitem['id'], agendaitem_url)
-      agendaitem_r = requests.get(agendaitem_url)
+      agendaitem_url = '%sto020.asp?selfaction=ws&template=xyz&TOLFDNR=%s' % (self.config.BASE_URL, agendaitem.numeric_id)
+      logging.info("Getting agendaitem %d from %s", agendaitem.numeric_id, agendaitem_url)
+      print "Getting agendaitem %d from %s" % (agendaitem.numeric_id, agendaitem_url)
+      
+      agendaitem_r = self.get_url(agendaitem_url)
+      if not agendaitem_r:
+        return
+      
       if len(agendaitem_r.history):
         logging.info("Agenda item %d from %s seems to be private", meeting_id, meeting_url)
         print "Meeting %d from %s seems to be private" % (meeting_id, meeting_url)
@@ -219,7 +260,7 @@ class ScraperAllRis(object):
         for add_item in agendaitem_root[0].iterchildren():
           if add_item.tag == "rtfWP" and len(add_item) > 0:
             try:
-              agendaitem["transcript"] = etree.tostring(add_item[0][1][0])
+              agendaitem.resolution_text = etree.tostring(add_item[0][1][0])
             except:
               print etree.tostring(add_item)
           else:
@@ -227,14 +268,13 @@ class ScraperAllRis(object):
         if 'voname' in add_agenda_item:
           # create paper with identifier
           agendaitem.paper = [Paper(numeric_id = int(elem['volfdnr']), title=add_agenda_item['voname'])]
-          print 'whats this?' + add_agenda_item['vobetr']
+          if add_agenda_item['vobetr'] != agendaitem.title:
+            print "ADDITIONAL INFO FOUND: %s"% add_agenda_item['vobetr']
           if hasattr(self, 'paper_queue'):
             self.paper_queue.add(int(elem['volfdnr']))
         elif int(elem['volfdnr']) is not 0:
           # create paper without identifier
           agendaitem.paper = [Paper(numeric_id = int(elem['volfdnr']))]
-          # do we need this?
-          #self.found_submissions.append(int(elem['volfdnr']))
           if hasattr(self, 'paper_queue'):
             self.paper_queue.add(int(elem['volfdnr']))
         if "nowDate" not in add_agenda_item:
@@ -245,13 +285,14 @@ class ScraperAllRis(object):
         else:
           # dereference result
           if add_agenda_item['totyp'] in self.config.RESULT_STRINGS:
-            agendaitem['result'] = self.config.RESULT_STRINGS[add_agenda_item['totyp']]
+            agendaitem.result = self.config.RESULT_STRINGS[add_agenda_item['totyp']]
           else:
             logging.warn("String '%s' not found in configured RESULT_STRINGS", add_agenda_item['totyp'])
             if self.options.verbose:
               print "WARNING: String '%s' not found in RESULT_STRINGS\n" % add_agenda_item['totyp']
         agendaitems.append(agendaitem)
-    meeting.agendaitems = agendaitems.values()
+    meeting.agendaitem = agendaitems
+    
     oid = self.db.save_meeting(meeting)
     if self.options.verbose:
       logging.info("Meeting %d stored with _id %s", meeting_id, oid)
@@ -270,7 +311,9 @@ class ScraperAllRis(object):
     try_counter = 0
     while True:
       try:
-        response = requests.get(paper_url)
+        response = self.get_url(paper_url)
+        if not response:
+          return
         if "noauth" in response.url:
           print "Paper %s in %s seems to private" % (paper_id, paper_url)
           return
@@ -288,7 +331,7 @@ class ScraperAllRis(object):
           elif line.tag == 'td':
             headline = line.text
           else:
-            logging.error("ERROR: Serious error in data taböe. Unable to parse.")
+            logging.error("ERROR: Serious error in data table. Unable to parse.")
             print "ERROR: Serious error in data table. Unable to parse."
           if headline:
             headline = headline.split(":")[0].lower()
@@ -302,10 +345,12 @@ class ScraperAllRis(object):
               data[headline] = line[1].text.strip()
             elif headline in ['status']:
               data[headline] = line[1].text.strip()
+              # related papers
               if len(line) > 2:
                 if len(line[3]):
                   # gets identifier. is there something else at this position? (will break)
-                  data['identifier'] = line[3][0][0][1][0].text
+                  data['paper'] = [{'paper': Paper(numeric_id=line[3][0][0][1][0].get('href').split('=')[1].split('&')[0] , identifier=line[3][0][0][1][0].text)}]
+                  
             elif headline == "beratungsfolge":
               # the actual list will be in the next row inside a table, so we only set a marker
               data = self.parse_consultation_list_headline(line, data) # for parser which have the consultation list here
@@ -329,7 +374,7 @@ class ScraperAllRis(object):
         paper.title = data['betreff']
         paper.description = data['docs']
         paper.type = data['drucksache-art']
-        paper.date = first_date
+        paper.date = first_date.strftime("%Y-%m-%d")
         if 'identifier' in data:
           paper.identifier = data['identifier']
         
@@ -339,13 +384,14 @@ class ScraperAllRis(object):
         if len(document_1):
           if document_1[0].value:
             href = '%sdo027.asp' % self.config.BASE_URL
-            identifier = attachment_1[0].value
-            name = 'Drucksache'
+            identifier = document_1[0].value
+            title = 'Drucksache'
             document = Document(
               identifier=identifier,
+              numeric_id=int(identifier),
               title=title)
-            document = self.get_document_file(attachment, href, True)
-            paper.document.append(document)
+            document = self.get_document_file(document, href, True)
+            paper.document.append({'document': document, 'relation': 'misc'})
         # get the attachments step 2 (additional attachments)
         documents = self.attachments_css(doc)
         if len(documents) > 0:
@@ -354,14 +400,14 @@ class ScraperAllRis(object):
               for tr in documents[0][2:]:
                 link = tr[0][0]
                 href = "%s%s" % (self.config.BASE_URL, link.attrib["href"])
-                name = link.text
+                title = link.text
                 identifier = str(int(link.attrib["href"].split('/')[4]))
                 document = Document(
                   identifier=identifier,
+                  numeric_id=int(identifier),
                   title=title)
                 document = self.get_document_file(document, href)
-                paper.document.append(attachment)
-                
+                paper.document.append({'document': document, 'relation': 'misc'})
         oid = self.db.save_paper(paper)
         return
       except (KeyError, IndexError):
@@ -376,13 +422,13 @@ class ScraperAllRis(object):
     
   def get_document_file(self, document, document_url, post=False):
     """
-    Loads the attachment file from the server and stores it into
-    the attachment object given as a parameter. The form
+    Loads the document file from the server and stores it into
+    the document object given as a parameter. The form
     parameter is the mechanize Form to be submitted for downloading
-    the attachment.
+    the document.
 
-    The attachment parameter has to be an object of type
-    model.attachment.Attachment.
+    The document parameter has to be an object of type
+    model.document.Document.
     """
     time.sleep(self.config.WAIT_TIME)
     logging.info("Getting document '%s'", document.identifier)
@@ -391,17 +437,20 @@ class ScraperAllRis(object):
     print "Getting document %s from %s" % (document.identifier, document_url)
 
     if post:
-      document_file = requests.post(document_url, data={'DOLFDNR': document.identifier, 'options': '64'})
+      document_file = requests.post(document_url, data={'DOLFDNR': '55434', 'options': '64'})
     else:
-      document_file = requests.get(attachment_url)
-    document.content = attachment_file.content
-    document.mimetype = magic.from_buffer(attachment.content, mime=True)
-    document.filename = self.make_attachment_filename(attachment.identifier, attachment.mimetype)
-    return attachment
+      document_file = self.get_url(document_url)
+      if not document_file:
+        print "Error downloading file %" % document_url
+        return document
+    document.content = document_file.content
+    document.mimetype = magic.from_buffer(document.content, mime=True)
+    document.filename = self.make_document_filename(document.identifier, document.mimetype)
+    return document
 
-  def make_attachment_path(self, identifier):
+  def make_document_path(self, identifier):
     """
-    Creates a reconstructable foder hierarchy for attachments
+    Creates a reconstructable foder hierarchy for documents
     """
     sha1 = hashlib.sha1(identifier).hexdigest()
     firstfolder = sha1[0:1]   # erstes Zeichen von der Checksumme
@@ -410,7 +459,7 @@ class ScraperAllRis(object):
       str(secondfolder))
     return ret
 
-  def make_attachment_filename(self, identifier, mimetype):
+  def make_document_filename(self, identifier, mimetype):
     ext = 'dat'
     if mimetype in self.config.FILE_EXTENSIONS:
       ext = self.config.FILE_EXTENSIONS[mimetype]
@@ -421,14 +470,14 @@ class ScraperAllRis(object):
     identifier = identifier[:192]
     return identifier + '.' + ext
 
-  def save_attachment_file(self, content, identifier, mimetype):
+  def save_document_file(self, content, identifier, mimetype):
     """
-    Creates a reconstructable folder hierarchy for attachments
+    Creates a reconstructable folder hierarchy for documents
     """
-    folder = self.make_attachment_path(identifier)
+    folder = self.make_document_path(identifier)
     if not os.path.exists(folder):
       os.makedirs(folder)
-    path = folder + os.sep + self.make_attachment_filename(self, identifier, mimetype)
+    path = folder + os.sep + self.make_document_filename(self, identifier, mimetype)
     with open(path, 'wb') as f:
       f.write(content)
       f.close()
@@ -443,16 +492,36 @@ class ScraperAllRis(object):
         return True
     return False
 
+  def get_url(self, url):
+    retry_counter = 0
+    while retry_counter < 4:
+      retry = False
+      try:
+        response = requests.get(url)
+        return response
+      except requests.exceptions.ConnectionError:
+        retry_counter = retry_counter + 1
+        retry = True
+        logging.info("Connection Reset while getting %s, try again", url)
+        if self.options.verbose:
+          print "Connection Reset while getting %s, try again" % url
+        time.sleep(self.config.WAIT_TIME * 5)
+    if retry_counter == 4 and retry == True:
+      logging.critical("HTTP Error %s while getting %s", url)
+      sys.stderr.write("CRITICAL ERROR:HTTP Error %s while getting %s" % url)
+      return False
+
   # mrtopf
   def parse_date(self, s):
     """parse dates like 20121219T160000Z"""
+    berlin = timezone('Europe/Berlin')
     year = int(s[0:4])
     month = int(s[4:6])
     day = int(s[6:8])
     hour = int(s[9:11])
     minute = int(s[11:13])
     second = int(s[13:15])
-    return datetime.datetime(year, month, day, hour, minute, second, 0)
+    return datetime.datetime(year, month, day, hour, minute, second, 0, tzinfo=berlin)
 
   # mrtopf
   def parse_consultation_list_headline(self, line, data):

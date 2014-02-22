@@ -402,7 +402,6 @@ class MongoDatabase(object):
     
     document_dict['slug'] = self.create_slug(document_dict, 'document')
     
-    
     file_changed = False
     if document_stored is not None:
       # document exists in database and must be compared field by field
@@ -417,18 +416,20 @@ class MongoDatabase(object):
         # assuming DBRef in document.file
         assert type(document_stored['file']) == DBRef
         file_stored = self.db.fs.files.find_one({'_id': document_stored['file'].id})
-      if file_stored is not None and 'content' in document_dict:
+      if file_stored is not None and document.content:
         # compare stored and submitted file
         if file_stored['length'] != len(document.content):
           file_changed = True
         elif file_stored['md5'] != md5(document.content).hexdigest():
           file_changed = True
+      if file_stored is None and document.content:
+        file_changed = True
     # Create new file version (if necessary)
-    if ((file_changed and 'depublication' not in document_stored)
-      or (document_stored is None)) and document.content:
+    if ((file_changed and 'depublication' not in document_stored) or (document_stored is None)) and document.content:
       file_oid = self.fs.put(document.content,
         filename=document.slug,
         body=DBRef('body', self.body_uid))
+      print file_oid
       logging.info("New file version stored with _id=%s", str(file_oid))
       if self.options.verbose:
         sys.stdout.write("New file version stored with _id %s\n" % str(file_oid))
@@ -464,13 +465,13 @@ class MongoDatabase(object):
             logging.debug("Key '%s' will be updated", key)
             if self.options.verbose:
               sys.stdout.write("Key '%s' in document has changed\n" % key)
-            set_attributes[key] = document_stored[key]
+            set_attributes[key] = document_dict[key]
       if 'file' not in document_dict and 'file' in document_stored:
           set_attributes['file'] = document_stored['file']
       if file_changed or set_attributes != {}:
         set_attributes['last_modified'] = document_dict['last_modified']
-        self.db.document.update({'_id': oid},
-          {'$set': set_attributes})
+
+        self.db.document.update({'_id': oid}, {'$set': set_attributes})
     return oid
 
   def slugify(self, identifier):
