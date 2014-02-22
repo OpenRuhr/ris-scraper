@@ -374,7 +374,8 @@ class ScraperAllRis(object):
         paper.title = data['betreff']
         paper.description = data['docs']
         paper.type = data['drucksache-art']
-        paper.date = first_date.strftime("%Y-%m-%d")
+        if first_date:
+          paper.date = first_date.strftime("%Y-%m-%d")
         if 'identifier' in data:
           paper.identifier = data['identifier']
         
@@ -437,7 +438,7 @@ class ScraperAllRis(object):
     print "Getting document %s from %s" % (document.identifier, document_url)
 
     if post:
-      document_file = requests.post(document_url, data={'DOLFDNR': '55434', 'options': '64'})
+      document_file = self.get_url(document_url, post_data={'DOLFDNR': '55434', 'options': '64'})
     else:
       document_file = self.get_url(document_url)
       if not document_file:
@@ -492,12 +493,15 @@ class ScraperAllRis(object):
         return True
     return False
 
-  def get_url(self, url):
+  def get_url(self, url, post_data=None):
     retry_counter = 0
     while retry_counter < 4:
       retry = False
       try:
-        response = requests.get(url)
+        if post_data is not None:
+          response = requests.post(url, post_data)
+        else:  
+          response = requests.get(url)
         return response
       except requests.exceptions.ConnectionError:
         retry_counter = retry_counter + 1
