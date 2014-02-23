@@ -253,7 +253,8 @@ class ScraperAllRis(object):
       u'Rat der Stadt' : {'mtype' : 'parliament', 'field' : 'PALFDNR'},
       u'Fraktion' : {'mtype' : 'organisation', 'field' : 'FRLFDNR'},
       u'Ausschüsse' : {'mtype' : 'committee', 'field' : 'AULFDNR'},
-      'Stadtbezirk': {'mtype' : 'parliament', 'field' : 'PALFDNR'}
+      'Stadtbezirk': {'mtype' : 'parliament', 'field' : 'PALFDNR'},
+      'BVV': {'mtype' : 'parliament', 'field' : 'PALFDNR'}
     }
 
     # obtain the table with the membership list via a simple state machine
@@ -267,6 +268,7 @@ class ScraperAllRis(object):
         what = line[0].text.strip()
         if what not in type_map:
           logging.error("Unknown committee type %s at person detail page %s", what, person_id)
+        continue
         mtype = type_map[what]['mtype']
         field = type_map[what]['field']
       else:
