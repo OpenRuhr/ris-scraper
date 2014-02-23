@@ -259,6 +259,7 @@ class ScraperAllRis(object):
 
     # obtain the table with the membership list via a simple state machine
     mtype = "parliament"
+    field = 'PALFDNR'
     old_group_id = None         # for checking if it changes
     old_group_name = None       # for checking if it changes
     group_id = None             # might break otherwise
@@ -268,7 +269,7 @@ class ScraperAllRis(object):
         what = line[0].text.strip()
         if what not in type_map:
           logging.error("Unknown committee type %s at person detail page %s", what, person_id)
-        continue
+          continue
         mtype = type_map[what]['mtype']
         field = type_map[what]['field']
       else:
