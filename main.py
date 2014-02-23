@@ -44,7 +44,8 @@ if __name__ == '__main__':
     description='Scrape Dein Ratsinformationssystem')
   parser.add_argument('--city', '-c', dest='city',
     help=("Name of the city"))
-  parser.add_argument('--verbose', '-v', action='count', default=0, dest="verbose")
+  parser.add_argument('--interactive', '-i', default=0, dest="interactive",
+    help=("Interactive mode: brings messages above given level to stdout"))
   parser.add_argument('--queue', '-q', dest="workfromqueue", action="store_true",
     default=False, help=('Set this flag to activate "greedy" scraping. This means that ' +
     'links from sessions to submissions are followed. This is implied ' +
@@ -112,8 +113,21 @@ if __name__ == '__main__':
     level=levels[loglevel],
     format='%(asctime)s %(name)s %(levelname)s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
-  logging.info('Starting scraper with configuration from "%s" and loglevel "%s"',
-    options.city, loglevel)
+  
+  # prevent "Starting new HTTP connection (1):" INFO messages from requests
+  requests_log = logging.getLogger("requests")
+  requests_log.setLevel(logging.WARNING)
+  
+  # interactive logging
+  if options.interactive in levels:
+    root = logging.getLogger()
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(levels[options.interactive])
+    formatter = logging.Formatter('%(levelname)s: %(message)s')
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+  
+  logging.info('Starting scraper with configuration from "%s" and loglevel "%s"', options.city, loglevel)
 
   # setup db
   db = None

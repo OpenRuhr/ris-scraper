@@ -51,6 +51,8 @@ MEETING_TYPE = {
   u'außerordentliche': 'EXTRAORDINARY'
 }
 
+PARTY_ALIAS = {}
+
 FILE_EXTENSIONS = {
   'application/pdf': 'pdf',
   'image/tiff': 'tif',

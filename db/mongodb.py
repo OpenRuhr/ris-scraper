@@ -190,8 +190,6 @@ class MongoDatabase(object):
       datatable = getattr(self.db, object_type)
       oid = datatable.insert(data_dict)
       logging.info("%s %s inserted as new", object_type, oid)
-      if self.options.verbose:
-        sys.stdout.write("%s %s inserted as new\n" % (object_type, oid))
       return oid
     
     # update object
@@ -199,25 +197,19 @@ class MongoDatabase(object):
       berlin = pytz.timezone('Europe/Berlin')
       # compare old and new dict and then send update
       logging.info("%s %s updated with _id %s", object_type, data_dict['identifier'], data_stored['_id'])
-      if self.options.verbose:
-        sys.stdout.write("%s %s updated with _id %s\n" % (object_type, data_dict['identifier'], data_stored['_id']))
       set_attributes = {}
       for key in data_dict.keys():
         if key in ['last_modified']:
           continue
         if key not in data_stored:
           logging.debug("Key '%s' will be added to %s", key, object_type)
-          if self.options.verbose:
-            sys.stdout.write("Key '%s' will be added to %s\n" % (key, object_type))
           set_attributes[key] = data_dict[key]
         else:
           # add utc info to datetime objects
           if isinstance(data_stored[key], datetime.datetime):
             data_stored[key] = pytz.utc.localize(data_stored[key])
           if data_stored[key] != data_dict[key]:
-            logging.debug("Key '%s' will be updated", key)
-            if self.options.verbose:
-              sys.stdout.write("Key '%s' in %s has changed\n" % (key, object_type))
+            logging.debug("Key '%s' in %s has changed", key, object_type)
             set_attributes[key] = data_dict[key]
       if set_attributes != {}:
         set_attributes['last_modified'] = data_dict['last_modified']
@@ -244,6 +236,7 @@ class MongoDatabase(object):
 
   def save_person(self, person):
     person_stored = self.get_object('person', 'numeric_id', person.numeric_id)
+    
     person_dict = person.dict()
     
     # setting body
@@ -253,7 +246,6 @@ class MongoDatabase(object):
     if 'identifier' not in person_dict:
       if 'numeric_id' not in person_dict:
         logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", person_dict.original_url)
-        print "Fatal error: neigher identifier nor numeric id avaiable at url %s" % person_dict.original_url
         return
       else:
         person_dict['identifier'] = str(person_dict['numeric_id'])
@@ -278,7 +270,6 @@ class MongoDatabase(object):
     if 'identifier' not in committee_dict:
       if 'numeric_id' not in committee_dict:
         logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", committee_dict.original_url)
-        print "Fatal error: neigher identifier nor numeric id avaiable at url %s" % committee_dict.original_url
         return
       else:
         committee_dict['identifier'] = str(committee_dict['numeric_id'])
@@ -305,7 +296,6 @@ class MongoDatabase(object):
     if 'identifier' not in meeting_dict:
       if 'numeric_id' not in meeting_dict:
         logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", meeting_dict.original_url)
-        print "Fatal error: neigher identifier nor numeric id avaiable at url %s" % meeting_dict.original_url
         return
       else:
         meeting_dict['identifier'] = str(meeting_dict['numeric_id'])
@@ -336,7 +326,6 @@ class MongoDatabase(object):
     if 'identifier' not in agendaitem_dict:
       if 'numeric_id' not in agendaitem_dict:
         logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", agendaitem_dict.original_url)
-        print "Fatal error: neigher identifier nor numeric id avaiable at url %s" % agendaitem_dict.original_url
         return
       else:
         agendaitem_dict['identifier'] = agendaitem_dict['numeric_id']
@@ -361,7 +350,6 @@ class MongoDatabase(object):
     if 'identifier' not in paper_dict:
       if 'numeric_id' not in paper_dict:
         logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", paper_dict.original_url)
-        print "Fatal error: neigher identifier nor numeric id avaiable at url %s" % paper_dict.original_url
         return
       else:
         paper_dict['identifier'] = str(paper_dict['numeric_id'])
@@ -393,23 +381,17 @@ class MongoDatabase(object):
     if 'identifier' not in document_dict:
       if 'numeric_id' not in document_dict:
         logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", paper_dict.original_url)
-        print "Fatal error: neigher identifier nor numeric id avaiable at url %s" % paper_dict.original_url
         return
       else:
         document_dict['identifier'] = str(document_dict['numeric_id'])
 
     # create slug
-    
     document_dict['slug'] = self.create_slug(document_dict, 'document')
     
     file_changed = False
     if document_stored is not None:
       # document exists in database and must be compared field by field
-      logging.info("Document %s is already in db with _id=%s",
-        document.identifier,
-        str(document_stored['_id']))
-      if self.options.verbose:
-        sys.stdout.write("Document %s is already in database with _id %s\n" % (document.identifier, str(document_stored['_id'])))
+      logging.info("Document %s is already in db with _id=%s", document.identifier, str(document_stored['_id']))
       # check if file is referenced
       file_stored = None
       if 'file' in document_stored:
@@ -429,10 +411,7 @@ class MongoDatabase(object):
       file_oid = self.fs.put(document.content,
         filename=document.slug,
         body=DBRef('body', self.body_uid))
-      print file_oid
       logging.info("New file version stored with _id=%s", str(file_oid))
-      if self.options.verbose:
-        sys.stdout.write("New file version stored with _id %s\n" % str(file_oid))
       document_dict['file'] = DBRef(collection='fs.files', id=file_oid)
 
     # erase file content (since stored elsewhere above)
@@ -443,10 +422,7 @@ class MongoDatabase(object):
     if document_stored is None:
       # insert new
       oid = self.db.document.insert(document_dict)
-      logging.info("Document %s inserted with _id %s",
-        document.identifier, str(oid))
-      if self.options.verbose:
-        sys.stdout.write("Document %s inserted with _id %s\n" % (document.identifier, str(oid)))
+      logging.info("Document %s inserted with _id %s", document.identifier, str(oid))
     else:
       # Only do partial update
       oid = document_stored['_id']
@@ -455,7 +431,6 @@ class MongoDatabase(object):
         if key in ['last_modified']:
           continue
         if key not in document_stored:
-          #print "Key '%s' is not in stored document." % key
           set_attributes[key] = document_dict[key]
         else:
           # add utc info to datetime objects
@@ -463,8 +438,6 @@ class MongoDatabase(object):
             document_stored[key] = pytz.utc.localize(document_stored[key])
           if document_stored[key] != document_dict[key]:
             logging.debug("Key '%s' will be updated", key)
-            if self.options.verbose:
-              sys.stdout.write("Key '%s' in document has changed\n" % key)
             set_attributes[key] = document_dict[key]
       if 'file' not in document_dict and 'file' in document_stored:
           set_attributes['file'] = document_stored['file']
@@ -505,8 +478,4 @@ class MongoDatabase(object):
       }])
     rs = None
     for entry in aggregate['result']:
-      if entry['_id']['rs'] != rs:
-        rs = entry['_id']['rs']
-        print "RS: %s" % rs
-      print "Queue %s, status %s: %d jobs" % (
-        entry['_id']['qname'], entry['_id']['status'], entry['count'])
+      logging.info("Queue %s, status %s: %d jobs", entry['_id']['qname'], entry['_id']['status'], entry['count'])

@@ -124,8 +124,6 @@ class ScraperSessionNet(object):
     self.urls = self.config.URLS[self.template_system]
     self.xpath = self.config.XPATH[self.template_system]
     logging.info("Found %s template system.", self.template_system)
-    if self.options.verbose:
-      print "Found %s template system" % self.template_system
 
 
   def find_person(self):
@@ -135,8 +133,6 @@ class ScraperSessionNet(object):
     # Read either person_id or committee_url from the opposite
     user_overview_url = self.urls['PERSON_OVERVIEW_PRINT_PATTERN']
     logging.info("Getting user overview from %s", user_overview_url)
-    if self.options.verbose:
-      print ("Getting user overview from %s" % user_overview_url)
     
     time.sleep(self.config.WAIT_TIME)
     response = self.get_url(user_overview_url)
@@ -211,8 +207,6 @@ class ScraperSessionNet(object):
           found += 1
       if found == 0:
         logging.info("No meetings(sessions) found for month %04d-%02d", year, month)
-        if self.options.verbose:
-          print "No meetings (sessions) found for month %04d-%02d\n" % (year, month)
   
   def get_person(self, person_url=None, person_id=None):
     """
@@ -226,8 +220,6 @@ class ScraperSessionNet(object):
       person_id = parsed['person_id']
   
     logging.info("Getting meeting (committee) %d from %s", person_id, person_url)
-    if self.options.verbose:
-      print ("Getting meeting (committee) %d from %s" % (person_id, person_url))
     
     committee = Committee(numeric_id=person_id)
     
@@ -266,8 +258,6 @@ class ScraperSessionNet(object):
       person_id = parsed['person_id']
   
     logging.info("Getting meeting (committee) %d from %s", person_id, person_committee_url)
-    if self.options.verbose:
-      print ("Getting person committee detail page %d from %s" % (person_id, person_committee_url))
     
     person = Person(numeric_id=person_id)
     
@@ -317,17 +307,19 @@ class ScraperSessionNet(object):
         else:
           if not new_committee:
             logging.error("Bad Table Structure in %s", person_committee_url)
-            if self.options.verbose:
-              print ("Bad Table Structure in %s" % person_committee_url)
       if new_committee:
         committees.append(new_committee)
     if committees:
       person.committee = committees
     oid = self.db.save_person(person)
-    if self.options.verbose:
-      logging.info("Person %d stored with _id %s", person_id, oid)
+    logging.info("Person %d stored with _id %s", person_id, oid)
     return
-  
+
+  def get_person_committee_presence(self, person_id=None, person_url=None):
+    # URL is like ???
+    # TODO
+    pass
+
   def get_meeting(self, meeting_url=None, meeting_id=None):
     """
     Load meeting details for the given detail page URL or numeric ID
@@ -340,8 +332,6 @@ class ScraperSessionNet(object):
       meeting_id = parsed['meeting_id']
   
     logging.info("Getting meeting (session) %d from %s", meeting_id, meeting_url)
-    if self.options.verbose:
-      print ("Getting meeting (session) %d from %s" % (meeting_id, meeting_url))
   
     meeting = Meeting(numeric_id=meeting_id)
     
@@ -363,13 +353,9 @@ class ScraperSessionNet(object):
       page_title = dom.xpath('//h1')[0].text
       if 'Fehlermeldung' in page_title:
         logging.info("Page %s cannot be accessed due to server error", meeting_url)
-        if self.options.verbose:
-          print "Page %s cannot be accessed due to server error" % meeting_url
         return
       if 'Berechtigungsfehler' in page_title:
         logging.info("Page %s cannot be accessed due to permissions", meeting_url)
-        if self.options.verbose:
-          print "Page %s cannot be accessed due to permissions" % meeting_url
         return
     except:
       pass
@@ -377,13 +363,9 @@ class ScraperSessionNet(object):
       error_h3 = dom.xpath('//h3[@class="smc_h3"]')[0].text.strip()
       if 'Keine Daten gefunden' in error_h3:
         logging.info("Page %s does not contain any agenda items", meeting_url)
-        if self.options.verbose:
-          print "Page %s does not contain agenda items" % meeting_url
         return
       if 'Fehlercode: 1104' in error_h3:
         logging.info("Page %s cannot be accessed due to permissions", meeting_url)
-        if self.options.verbose:
-          print "Page %s cannot be accessed due to permissions" % meeting_url
         return
     except:
       pass
@@ -543,8 +525,6 @@ class ScraperSessionNet(object):
                 agendaitem.result = self.config.RESULT_STRINGS[value]
               else:
                 logging.warn("String '%s' not found in configured RESULT_STRINGS", value)
-                if self.options.verbose:
-                  print "WARNING: String '%s' not found in RESULT_STRINGS\n" % value
               agendaitem.result = value
             elif label in ['Bemerkung:', 'Abstimmung:']:
               agendaitem.result_details = value
@@ -558,8 +538,6 @@ class ScraperSessionNet(object):
           # Subheading (public / nonpublic part)
           if fields[0].text is not None and "Nicht öffentlich" in fields[0].text.encode('utf-8'):
             public = False
-      
-      #print json.dumps(agendaitems, indent=2)
       meeting.agendaitem = agendaitems
 
     # meeting-related documents
@@ -615,10 +593,8 @@ class ScraperSessionNet(object):
                 )
                 # Traversing the whole mechanize response to submit this form
                 for mform in mechanize_forms:
-                  #print "Form found: '%s'" % mform
                   for control in mform.controls:
                     if control.name == 'DT' and control.value == document_id:
-                      #print "Found matching form: ", control.name, control.value
                       document = self.get_document_file(document, mform)
                 if 'Einladung' in title:
                   document_type = 'invitation'
@@ -631,8 +607,7 @@ class ScraperSessionNet(object):
       if len(documents):
         meeting.document = documents
     oid = self.db.save_meeting(meeting)
-    if self.options.verbose:
-      logging.info("Meeting %d stored with _id %s", meeting_id, oid)
+    logging.info("Meeting %d stored with _id %s", meeting_id, oid)
 
 
   def get_paper(self, paper_url=None, paper_id=None):
@@ -648,8 +623,6 @@ class ScraperSessionNet(object):
       paper_id = parsed['paper_id']
   
     logging.info("Getting paper %d from %s", paper_id, paper_url)
-    if self.options.verbose:
-      print ("Getting paper %d from %s" % (paper_id, paper_url))
     
     paper = Paper(numeric_id=paper_id)
     try_until = 1
@@ -698,13 +671,9 @@ class ScraperSessionNet(object):
         try:
           if 'Fehlermeldung' in page_title:
             logging.info("Page %s cannot be accessed due to server error", paper_url)
-            if self.options.verbose:
-              print "Page %s cannot be accessed due to server error" % paper_url
             return
           if 'Berechtigungsfehler' in page_title:
             logging.info("Page %s cannot be accessed due to permissions", paper_url)
-            if self.options.verbose:
-              print "Page %s cannot be accessed due to permissions" % paper_url
             return
         except:
           pass
@@ -881,16 +850,13 @@ class ScraperSessionNet(object):
     model.document.Document.
     """
     logging.info("Getting document '%s'", document.identifier)
-    if self.options.verbose:
-      print "Getting document %s" % document.identifier
     if form:
       mechanize_request = form.click()
     elif link:
       mechanize_request = mechanize.Request(link)
     else:
       logging.warn("No form or link provided")
-      if self.options.verbose:
-        sys.stderr.write("No form or link provided")
+      
     retry_counter = 0
     while retry_counter < 4:
       retry = False
@@ -900,8 +866,6 @@ class ScraperSessionNet(object):
         mform_url = mform_response.geturl()
         if not self.list_in_string(self.urls['ATTACHMENT_DOWNLOAD_TARGET'], mform_url) and form:
           logging.warn("Unexpected form target URL '%s'", mform_url)
-          if self.options.verbose:
-            sys.stderr.write("Unexpected form target URL '%s'\n" % mform_url)
           return document
         document.content = mform_response.read()
         if ord(document.content[0]) == 32 and ord(document.content[1]) == 10:
@@ -913,12 +877,9 @@ class ScraperSessionNet(object):
           retry_counter = retry_counter + 1
           retry = True
           log.info("HTTP Error 502 while getting %s, try again", url)
-          if self.options.verbose:
-            print "HTTP Error 502 while getting %s, try again" % url
           time.sleep(self.config.WAIT_TIME * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
-          sys.stderr.write("CRITICAL ERROR:HTTP Error %s while getting %s" % (e.code, url))
           return
     return document
   
@@ -938,8 +899,7 @@ class ScraperSessionNet(object):
     if mimetype in self.config.FILE_EXTENSIONS:
       ext = self.config.FILE_EXTENSIONS[mimetype]
     if ext == 'dat':
-      logging.warn("No entry in config.FILE_EXTENSIONS for '%s'", mimetype)
-      sys.stderr.write("WARNING: No entry in config.FILE_EXTENSIONS for '%s'\n" % mimetype)
+      logging.warn("No entry in config.FILE_EXTENSIONS for %s at document id %s", mimetype, identifier)
     # Verhindere Dateinamen > 255 Zeichen
     identifier = identifier[:192]
     return identifier + '.' + ext
@@ -979,8 +939,6 @@ class ScraperSessionNet(object):
           retry_counter = retry_counter + 1
           retry = True
           log.info("HTTP Error 502 while getting %s, try again", url)
-          if self.options.verbose:
-            print "HTTP Error 502 while getting %s, try again" % url
           time.sleep(self.config.WAIT_TIME * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)

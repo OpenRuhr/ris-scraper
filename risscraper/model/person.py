@@ -31,13 +31,21 @@ class Person(Base):
   """
   A committee class
   """
-  def __init__(self, identifier=None, numeric_id=None, title=None, title_short=None,
+  def __init__(self, identifier=None, numeric_id=None, title=None, sex=None,
+      address=None, house_number=None, postalcode=None, city=None, phone=None, fax=None, mobile=None, email=None, website=None,
       firstname=None, lastname=None, original_url=None, last_modified=None, committee=None):
     self.identifier = identifier
     self.numeric_id = numeric_id
     self.title = title
+    self.sex = sex
     self.firstname = firstname
     self.lastname = lastname
+    self.address = address
+    self.postalcode = postalcode
+    self.city = city
+    self.phone = phone
+    self.fax = fax
+    self.mobile = mobile
     self.original_url = original_url
     self.last_modified = last_modified
     self.x_committee = committee

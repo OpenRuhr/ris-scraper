@@ -44,6 +44,24 @@ PARTY_ALIAS = {
 ###### Result normalization mapping
 
 RESULT_STRINGS = {
+  'von der Tagesordnung abgesetzt': '',
+  'einstimmig beschlossen': '',
+  'ohne Beschlussfassung geschoben': '',
+  'mehrheitlich beschlossen': '',
+  'zur Kenntnis genommen': '',
+  u'einstimmig geändert beschlossen': '',
+  'verwiesen': '',
+  'Vorlage eingebracht': '',
+  'mehrheitlich abgelehnt': '',
+  'einstimmig abgelehnt': '',
+  'von der Tagesordnung abgesetzt': '',
+  u'vertagt, mit Prüfauftrag': '',
+  'bei Stimmengleichheit abgelehnt': '',
+  'entfällt': '',
+  'Zwischenmitteilung zur Kenntnis genommen': '',
+  u'zurückgezogen': '',
+}
+"""
   'Die Anfrage wird schriftlich beantwortet.': 'ANFAGE_ANTWORT_SCHRIFTLICH',
   'Die Anfrage ist schriftlich beantwortet worden.': 'ANFRAGE_BEANTWORTET_SCHRIFTLICH',
   u'Die Anfrage ist m\xfcndlich beantwortet worden.': 'ANFAGE_BEANTWORTET_MUENDLICH',
@@ -81,7 +99,7 @@ RESULT_STRINGS = {
   'Abstimmungsergebnis: Mehrheitlich gegen Beschlussvorschlag': 'ABGELEHNT_MEHRHEIT',
   
   'erledigt': 'ERLEDIGT'
-}
+}"""
 
 ##### Page URL masks
 

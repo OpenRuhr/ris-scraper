@@ -34,7 +34,6 @@ from lxml import etree, html
 from lxml.cssselect import CSSSelector
 from StringIO import StringIO
 import hashlib
-#import pprint
 import magic
 import os
 import logging
@@ -96,13 +95,14 @@ class ScraperAllRis(object):
     """
     Empty queues if they have values. Queues are emptied in the
     following order:
-    1. Paper
-    2. Meetings
-    3. Papers
+    1. Person
+    2. Meeting
+    3. Paper
     """
     while self.person_queue.has_next():
       job = self.person_queue.get()
       self.get_person(person_id=job['key'])
+      self.get_person_committee(person_id=job['key'])
       self.person_queue.resolve_job(job)
     while self.meeting_queue.has_next():
       job = self.meeting_queue.get()
@@ -124,11 +124,80 @@ class ScraperAllRis(object):
     """
     self.template_system = 'xml'
     logging.info("Nothing to guess until now.")
-    if self.options.verbose:
-      print "Nothing to guess until now"
 
   def find_person(self):
-    pass
+    find_person_url = self.config.BASE_URL + 'kp041.asp?template=xyz&selfaction=ws&showAll=true&PALFDNRM=1&kpdatfil=&filtdatum=filter&kpname=&kpsonst=&kpampa=99999999&kpfr=99999999&kpamfr=99999999&kpau=99999999&kpamau=99999999&searchForm=true&search=Suchen'
+    
+    """parse an XML file and return the tree"""
+    parser = etree.XMLParser(recover=True)
+    r = self.get_url(find_person_url)
+    if not r:
+      return
+    xml = r.text.encode('ascii','xmlcharrefreplace') 
+    tree = etree.fromstring(xml, parser=parser)
+  
+    # element 0 is the special block
+    # element 1 is the list of persons
+    for node in tree[1].iterchildren():
+      elem = {}
+      for e in node.iterchildren():
+        elem[e.tag] = e.text
+      
+      # now retrieve person details such as committee memberships etc.
+      # we also get the age (but only that, no date of birth)
+      person = Person(numeric_id=int(elem['kplfdnr']), identifier=elem['kplfdnr'])
+      if elem['link_kp']:
+        person.original_url = elem['link_kp']
+      # personal information
+      
+      if elem['adtit']:
+        person.title = elem['adtit']
+      if elem['antext1'] == 'Frau':
+        person.sex = 1
+      elif elem['antext1'] == 'Herr':
+        person.sex = 2
+      if elem['advname']:
+        person.firstname = elem['advname']
+      if elem['adname']:
+        person.lastname = elem['adname']
+      
+      # address
+      if elem['adstr']:
+        person.address = elem['adstr']
+      if elem['adhnr']:
+        person.house_number = elem['adhnr']
+      if elem['adplz']:
+        person.postalcode = elem['adplz']
+      if elem['adtel']:
+        person.phone = elem['adtel']
+      
+      # contact
+      if elem['adtel']:
+        person.phone = elem['adtel']
+      if elem['adtel2']:
+        person.mobile = elem['adtel2']
+      if elem['adfax']:
+        person.fax = elem['adfax']
+      if elem['adfax']:
+        person.fax = elem['adfax']
+      if elem['ademail']:
+        person.email = elem['ademail']
+      if elem['adwww1']:
+        person.website = elem['adwww1']
+      
+      person_party = elem['kppartei']
+      if person_party:
+        if person_party in self.config.PARTY_ALIAS:
+          person_party = self.config.PARTY_ALIAS[person_party]
+        person.committee = [{'committee': Committee(identifier=person_party, title=person_party, type='party')}]
+      
+      if elem['link_kp'] is not None:
+        if hasattr(self, 'person_queue'):
+          self.person_queue.add(person.numeric_id)
+      else:
+        logging.info("Person %s %s has no link", person.firstname, person.lastname)
+      oid = self.db.save_person(person)
+        
   
   def find_meeting(self, start_date=None, end_date=None):
     """
@@ -136,7 +205,6 @@ class ScraperAllRis(object):
     """
     meeting_url = "%ssi010.asp?selfaction=ws&template=xyz&kaldatvon=%s&kaldatbis=%s" % (self.config.BASE_URL, start_date.strftime("%d.%m.%Y"), end_date.strftime("%d.%m.%Y"))
     logging.info("Getting meeting overview from %s", meeting_url)
-    print "Getting meeting overview from %s" %(meeting_url)
     
     
     parser = etree.XMLParser(recover=True)
@@ -168,7 +236,92 @@ class ScraperAllRis(object):
     pass
   
   def get_person(self, person_id=None, person_url=None):
+    # we dont need this(?)
     pass
+  
+  def get_person_committee(self, person_id=None, committee_url=None):
+    url = "%skp020.asp?KPLFDNR=%s&history=true" % (self.config.BASE_URL, person_id)
+    response = self.get_url(url)
+    if not url:
+      return
+    tree = html.fromstring(response.text)
+      
+    committees = []
+    person = Person(numeric_id=person_id)
+    # maps name of type to form name and membership type
+    type_map = {
+      u'Rat der Stadt' : {'mtype' : 'parliament', 'field' : 'PALFDNR'},
+      u'Fraktion' : {'mtype' : 'organisation', 'field' : 'FRLFDNR'},
+      u'Ausschüsse' : {'mtype' : 'committee', 'field' : 'AULFDNR'},
+      'Stadtbezirk': {'mtype' : 'parliament', 'field' : 'PALFDNR'}
+    }
+
+    # obtain the table with the membership list via a simple state machine
+    mtype = "parliament"
+    old_group_id = None         # for checking if it changes
+    old_group_name = None       # for checking if it changes
+    group_id = None             # might break otherwise
+    table = tree.xpath('//*[@id="rismain_raw"]/table[2]')[0]
+    for line in table.findall("tr"):
+      if line[0].tag == "th":
+        what = line[0].text.strip()
+        if what not in type_map:
+          logging.error("Unknown committee type %s at person detail page %s", what, person_id)
+        mtype = type_map[what]['mtype']
+        field = type_map[what]['field']
+      else:
+        if "Keine Information" in line.text_content():
+          # skip because no content is available
+          continue
+        
+        membership = {}
+        
+        # first get the name of group
+        group_name = line[1].text_content()
+        committee = Committee(identifier=group_name)
+        committee.type = mtype
+
+        # now the first col might be a form with more useful information which will carry through until we find another one
+        # with it. we still check the name though
+        form = line[0].find("form")
+        if form is not None:
+          group_id = int(form.find("input[@name='%s']" % field).get("value"))
+          committee.numeric_id = group_id
+          old_group_id = group_id # remember it for next loop
+          old_group_name = group_name # remember it for next loop
+          
+        else:
+          # we did not find a form. We assume that the old group still applies but we nevertheless check if the groupname is still the same
+          if old_group_name != group_name:
+            logging.debug("Group name differs but we didn't get a form with new group id: group name=%s, old group name=%s, group_id=%s at url %s", group_name, old_group_name, old_group_id, url)
+        
+        # TODO: create a list of functions so we can index them somehow
+        function = line[2].text_content()
+        raw_date = line[3].text_content()
+        
+        # parse the date information
+        if "seit" in raw_date:
+          dparts = raw_date.split()
+          membership['end'] = dparts[-1]
+        elif "Keine" in raw_date:
+          # no date information available
+          start_date = end_date = None
+        else:
+          dparts = raw_date.split()
+          membership['start'] = dparts[0]
+          membership['end'] = dparts[-1]
+        
+        membership['committee'] = committee
+        committees.append(membership)
+        
+    person.committee = committees
+    oid = self.db.save_person(person)
+  
+  def get_person_committee_presence(self, person_id=None, person_url=None):
+    # URL is like si019.asp?SILFDNR=5672
+    # TODO
+    pass
+  
 
   def get_meeting(self, meeting_url=None, meeting_id=None):
     """
@@ -177,7 +330,6 @@ class ScraperAllRis(object):
     meeting_url = "%sto010.asp?selfaction=ws&template=xyz&SILFDNR=%s" % (self.config.BASE_URL, meeting_id)
     
     logging.info("Getting meeting %d from %s", meeting_id, meeting_url)
-    print "Getting meeting %d from %s" %( meeting_id, meeting_url)
     
     r = self.get_url(meeting_url)
     if not r:
@@ -186,10 +338,8 @@ class ScraperAllRis(object):
     if len(r.history):
       if r.history[0].status_code == 302:
         logging.info("Meeting %d from %s seems to be private", meeting_id, meeting_id)
-        print "Meeting %d from %s seems to be private" % (meeting_id, meeting_url)
       else:
         logging.error("Strange redirect %d from %s with status code %s", meeting_id, meeting_url, r.history[0].status_code)
-        print "ERROR: Strange redirect %d from %s with status code %s" % (meeting_id, meeting_url, r.history[0].status_code)
       return
     xml = r.text.encode('ascii','xmlcharrefreplace') 
     parser = etree.XMLParser(recover=True)
@@ -209,8 +359,6 @@ class ScraperAllRis(object):
         meeting.type = self.config.MEETING_TYPE[special['saname']]
       else:
         logging.warn("String '%s' not found in MEETING_TYPE", special['saname'])
-        if self.options.verbose:
-          print "WARNING: String '%s' not found in MEETING_TYPE\n" % special['saname']
     # head area
     head = {}
     for item in root[0].iterchildren():
@@ -243,7 +391,6 @@ class ScraperAllRis(object):
       time.sleep(self.config.WAIT_TIME)
       agendaitem_url = '%sto020.asp?selfaction=ws&template=xyz&TOLFDNR=%s' % (self.config.BASE_URL, agendaitem.numeric_id)
       logging.info("Getting agendaitem %d from %s", agendaitem.numeric_id, agendaitem_url)
-      print "Getting agendaitem %d from %s" % (agendaitem.numeric_id, agendaitem_url)
       
       agendaitem_r = self.get_url(agendaitem_url)
       if not agendaitem_r:
@@ -251,7 +398,6 @@ class ScraperAllRis(object):
       
       if len(agendaitem_r.history):
         logging.info("Agenda item %d from %s seems to be private", meeting_id, meeting_url)
-        print "Meeting %d from %s seems to be private" % (meeting_id, meeting_url)
       else:
         agendaitem_xml = agendaitem_r.text.encode('ascii','xmlcharrefreplace') 
         agendaitem_parser = etree.XMLParser(recover=True)
@@ -262,14 +408,14 @@ class ScraperAllRis(object):
             try:
               agendaitem.resolution_text = etree.tostring(add_item[0][1][0])
             except:
-              print etree.tostring(add_item)
+              logging.warn("Unable to parse resolution text at %s", agendaitem_url)
           else:
             add_agenda_item[add_item.tag] = add_item.text
         if 'voname' in add_agenda_item:
           # create paper with identifier
           agendaitem.paper = [Paper(numeric_id = int(elem['volfdnr']), title=add_agenda_item['voname'])]
           if add_agenda_item['vobetr'] != agendaitem.title:
-            print "ADDITIONAL INFO FOUND: %s"% add_agenda_item['vobetr']
+            logging.warn("different values for title: %s and %s", agendaitem.title, add_agenda_item['vobetr'])
           if hasattr(self, 'paper_queue'):
             self.paper_queue.add(int(elem['volfdnr']))
         elif int(elem['volfdnr']) is not 0:
@@ -280,22 +426,17 @@ class ScraperAllRis(object):
         if "nowDate" not in add_agenda_item:
           # something is broken with this so we don't store it
           logging.warn("Skipping broken agenda at ", agendaitem_url)
-          if self.options.verbose:
-            print "Skipping broken agenda at " % agendaitem_url
         else:
           # dereference result
           if add_agenda_item['totyp'] in self.config.RESULT_STRINGS:
             agendaitem.result = self.config.RESULT_STRINGS[add_agenda_item['totyp']]
           else:
             logging.warn("String '%s' not found in configured RESULT_STRINGS", add_agenda_item['totyp'])
-            if self.options.verbose:
-              print "WARNING: String '%s' not found in RESULT_STRINGS\n" % add_agenda_item['totyp']
         agendaitems.append(agendaitem)
     meeting.agendaitem = agendaitems
     
     oid = self.db.save_meeting(meeting)
-    if self.options.verbose:
-      logging.info("Meeting %d stored with _id %s", meeting_id, oid)
+    logging.info("Meeting %d stored with _id %s", meeting_id, oid)
     
 
   def get_paper(self, paper_url=None, paper_id=None):
@@ -305,7 +446,6 @@ class ScraperAllRis(object):
     """
     paper_url = '%svo020.asp?VOLFDNR=%s' % (self.config.BASE_URL, paper_id)
     logging.info("Getting paper %d from %s", paper_id, paper_url)
-    print "Getting paper %d from %s" % (paper_id, paper_url)
 
     # stupid re-try concept because AllRis sometimes misses start < at tags at first request
     try_counter = 0
@@ -315,7 +455,7 @@ class ScraperAllRis(object):
         if not response:
           return
         if "noauth" in response.url:
-          print "Paper %s in %s seems to private" % (paper_id, paper_url)
+          logging.warn("Paper %s in %s seems to private" % (paper_id, paper_url))
           return
         text = self.preprocess_text(response.text)
         doc = html.fromstring(text)
@@ -332,7 +472,6 @@ class ScraperAllRis(object):
             headline = line.text
           else:
             logging.error("ERROR: Serious error in data table. Unable to parse.")
-            print "ERROR: Serious error in data table. Unable to parse."
           if headline:
             headline = headline.split(":")[0].lower()
             if headline[-1]==":":
@@ -414,11 +553,9 @@ class ScraperAllRis(object):
       except (KeyError, IndexError):
         if try_counter < 3:
           logging.info("Try again: Getting paper %d from %s", paper_id, paper_url)
-          print "Try again: Getting paper %d from %s" % (paper_id, paper_url)
           try_counter += 1
         else:
           logging.error("Failed getting paper %d from %s", paper_id, paper_url)
-          print "ERROR: Failed getting paper %d from %s" % (paper_id, paper_url)
           return
     
   def get_document_file(self, document, document_url, post=False):
@@ -434,18 +571,23 @@ class ScraperAllRis(object):
     time.sleep(self.config.WAIT_TIME)
     logging.info("Getting document '%s'", document.identifier)
     
-    #if self.options.verbose:
-    print "Getting document %s from %s" % (document.identifier, document_url)
+    document_backup = document
+    logging.info("Getting document %s from %s", document.identifier, document_url)
 
     if post:
       document_file = self.get_url(document_url, post_data={'DOLFDNR': '55434', 'options': '64'})
     else:
       document_file = self.get_url(document_url)
       if not document_file:
-        print "Error downloading file %" % document_url
+        logging.error("Error downloading file %", document_url)
         return document
     document.content = document_file.content
-    document.mimetype = magic.from_buffer(document.content, mime=True)
+    # catch strange magic exception
+    try:
+      document.mimetype = magic.from_buffer(document.content, mime=True)
+    except magic.MagicException:
+      logging.warn("Warning: unknown magic error at document %s from %s", document.identifier, document_url)
+      return document_backup
     document.filename = self.make_document_filename(document.identifier, document.mimetype)
     return document
 
@@ -507,8 +649,6 @@ class ScraperAllRis(object):
         retry_counter = retry_counter + 1
         retry = True
         logging.info("Connection Reset while getting %s, try again", url)
-        if self.options.verbose:
-          print "Connection Reset while getting %s, try again" % url
         time.sleep(self.config.WAIT_TIME * 5)
     if retry_counter == 4 and retry == True:
       logging.critical("HTTP Error %s while getting %s", url)
@@ -604,7 +744,6 @@ class ScraperAllRis(object):
           if len(line[1]) == 1: # we have a link (and ignore it)
             item['date'] = datetime.datetime.strptime(line[1][0].text.strip(), "%d.%m.%Y")
           else:
-            print line[1].text.strip()
             item['date'] = datetime.datetime.strptime(line[1].text.strip(), "%d.%m.%Y")
           if len(line[2]):
             form = line[2][0] # form with silfdnr and toplfdnr but only in link (action="to010.asp?topSelected=57023")
@@ -613,8 +752,7 @@ class ScraperAllRis(object):
           else:
             item['silfdnr'] = None # no link to TOP. should not be possible but happens (TODO: Bugreport?)
             item['meeting'] = line[3].text.strip()   # here we have no link but the text is in the TD directly
-            item['PYALLRIS_WARNING'] = "the agenda item in the consultation list on the web page does not contain a link to the actual meeting"
-            print "WARNING:", item['PYALLRIS_WARNING']
+            logging.warn("Agendaitem in the consultation list on the web page does not contain a link to the actual meeting at meeting %s", item['meeting'])
           item['decision'] = line[4].text.strip()     # e.g. "ungeändert beschlossen"
           toplfdnr = None
           if len(line[6]) > 0:
@@ -624,9 +762,7 @@ class ScraperAllRis(object):
           result.append(item)
         except (IndexError, KeyError):
           logging.error("ERROR: Serious error in consultation list. Unable to parse.")
-          print "ERROR: Serious error in consultation list. Unable to parse."
-          print etree.tostring(line)
-          print traceback.print_exc(file=sys.stdout)
+          logging.error("Serious error in consultation list. Unable to parse.")
           return []
       i=i+1
     return result
