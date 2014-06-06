@@ -33,6 +33,7 @@ import sys
 import importlib
 import logging
 import calendar
+from configobj import ConfigObj
 
 cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"city")))
 if cmd_subfolder not in sys.path:
@@ -42,7 +43,7 @@ if cmd_subfolder not in sys.path:
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
     description='Scrape Dein Ratsinformationssystem')
-  parser.add_argument('--city', '-c', dest='city',
+  parser.add_argument('--city', '-c', dest='city', required=True,
     help=("Name of the city"))
   parser.add_argument('--interactive', '-i', default=0, dest="interactive",
     help=("Interactive mode: brings messages above given level to stdout"))
@@ -83,16 +84,18 @@ if __name__ == '__main__':
   parser.add_argument('--status', dest="status", action="store_true",
     default=False, help='Print out queue status')
   options = parser.parse_args()
-
+  
+  config = ConfigObj('config.cfg')
+  
   if options.city:
     try:
-      config = __import__(options.city)
+      config.merge(ConfigObj('city/' + options.city + '.cfg'))
     except ImportError, e:
       if "No module named" in str(e):
         sys.stderr.write("ERROR: Configuration module not found. Make sure you have your config file\n")
         sys.stderr.write("     named '%s.py' in the ./city folder.\n" % options.city)
       sys.exit(1)
-
+  
   # set up logging
   logfile = 'scrapearis.log'
   if config.LOG_BASE_DIR is not None:

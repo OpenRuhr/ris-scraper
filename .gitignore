@@ -39,7 +39,6 @@ nosetests.xml
 
 # virtualenv directory
 venv
-ris-scraper
 
 # cache directory
 cache
