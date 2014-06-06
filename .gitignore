@@ -35,7 +35,7 @@ nosetests.xml
 .pydevproject
 
 # Komodo Edit
-.komodoproject
+*.komodoproject
 
 # virtualenv directory
 venv
