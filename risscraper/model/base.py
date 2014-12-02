@@ -42,7 +42,7 @@ class Base(object):
     self._required_fields = []
     self._enforced_types = {}
     self._defaults = {
-      'last_modified': datetime.datetime.utcnow()
+      'lastModified': datetime.datetime.utcnow()
     }
     self.apply_defaults()
     #self.apply_filters()

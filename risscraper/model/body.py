@@ -31,9 +31,26 @@ class Body(Base):
   """
   A body class
   """
-  def __init__(self, identifier=None, rs=None, title=None, last_modified=None):
+  def __init__(self, identifier=None, rgs=None, name=None, modified=None):
     self.identifier = identifier
-    self.rs = rs
-    self.title = title
-    self.last_modified = last_modified
+    self.numericId = numericId
+    self.originalUrl = originalUrl
+    self.created = created
+    self.modified = modified
+    
+    self.system = system
+    self.contactEmail = contactEmail
+    self.contactName = contactName
+    self.rgs = rgs
+    self.equivalentBody = equivalentBody
+    self.name = name
+    self.nameLong = nameLong
+    self.website = website
+    self.license = license
+    self.licenseValidSinceDay = licenseValidSinceDay
+    #organization
+    #meeting
+    #paper
+    #member
+    self.classification = classification
     super(Body, self).__init__()

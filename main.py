@@ -33,7 +33,7 @@ import sys
 import importlib
 import logging
 import calendar
-from configobj import ConfigObj
+import config as db_config
 
 cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"city")))
 if cmd_subfolder not in sys.path:
@@ -43,8 +43,8 @@ if cmd_subfolder not in sys.path:
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
     description='Scrape Dein Ratsinformationssystem')
-  parser.add_argument('--city', '-c', dest='city', required=True,
-    help=("Name of the city"))
+  parser.add_argument('--body', '-b', dest='body_uid', required=True,
+    help=("UID of the body"))
   parser.add_argument('--interactive', '-i', default=0, dest="interactive",
     help=("Interactive mode: brings messages above given level to stdout"))
   parser.add_argument('--queue', '-q', dest="workfromqueue", action="store_true",
@@ -58,6 +58,16 @@ if __name__ == '__main__':
   parser.add_argument('--end', dest="end_month",
     default=False, help=('Find sessions and related content up to this month. ' +
     'Requires --start parameter to be set, too. Format: "YYYY-MM"'))
+  # organization
+  parser.add_argument('--organizationid', dest="organization_id",
+    default=False, help='Scrape a specific organization, identified by its numeric ID')
+  parser.add_argument('--organizationurl', dest="organization_url",
+    default=False, help='Scrape a specific organization, identified by its detail page URL')
+  # person
+  parser.add_argument('--personid', dest="person_id",
+    default=False, help='Scrape a specific person, identified by its numeric ID')
+  parser.add_argument('--personurl', dest="person_url",
+    default=False, help='Scrape a specific person, identified by its detail page URL')
   # meeting
   parser.add_argument('--meetingid', dest="meeting_id",
     default=False, help='Scrape a specific meeting, identified by its numeric ID')
@@ -68,39 +78,26 @@ if __name__ == '__main__':
     default=False, help='Scrape a specific paper, identified by its numeric ID')
   parser.add_argument('--paperurl', dest="paper_url",
     default=False, help='Scrape a specific paper, identified by its detail page URL')
-  # committee
-  parser.add_argument('--committeeid', dest="committee_id",
-    default=False, help='Scrape a specific committee, identified by its numeric ID')
-  parser.add_argument('--committeeurl', dest="committee_url",
-    default=False, help='Scrape a specific committee, identified by its detail page URL')
-  # person
-  parser.add_argument('--personid', dest="person_id",
-    default=False, help='Scrape a specific person, identified by its numeric ID')
-  parser.add_argument('--personurl', dest="person_url",
-    default=False, help='Scrape a specific person, identified by its detail page URL')
   
   parser.add_argument('--erase', dest="erase_db", action="store_true",
     default=False, help='Erase all database content before start. Caution!')
   parser.add_argument('--status', dest="status", action="store_true",
     default=False, help='Print out queue status')
   options = parser.parse_args()
-  
-  config = ConfigObj('config.cfg')
-  
-  if options.city:
-    try:
-      config.merge(ConfigObj('city/' + options.city + '.cfg'))
-    except ImportError, e:
-      if "No module named" in str(e):
-        sys.stderr.write("ERROR: Configuration module not found. Make sure you have your config file\n")
-        sys.stderr.write("     named '%s.py' in the ./city folder.\n" % options.city)
-      sys.exit(1)
+
+  # setup db
+  db = None
+  if db_config.DB_TYPE == 'mongodb':
+    import db.mongodb
+    db = db.mongodb.MongoDatabase(db_config)
+    config = db.get_config(options.body_uid)
+    db.setup(config)
   
   # set up logging
   logfile = 'scrapearis.log'
-  if config.LOG_BASE_DIR is not None:
+  if config['scraper']['log_base_dir'] is not None:
     now = datetime.datetime.utcnow()
-    logfile = '%s%s-%s-%s.log' % (config.LOG_BASE_DIR, config.CITY, config.RS, now.strftime('%Y%m%d-%H%M'))
+    logfile = '%s%s-%s.log' % (config['scraper']['log_base_dir'], config['city']['_id'], now.strftime('%Y%m%d-%H%M'))
   levels = {
     'DEBUG': logging.DEBUG,
     'INFO': logging.INFO,
@@ -109,8 +106,8 @@ if __name__ == '__main__':
     'CRITICAL': logging.CRITICAL
   }
   loglevel = 'INFO'
-  if config.LOG_LEVEL is not None:
-    loglevel = config.LOG_LEVEL
+  if config['scraper']['log_level'] is not None:
+    loglevel = config['scraper']['log_level']
   logging.basicConfig(
     filename=logfile,
     level=levels[loglevel],
@@ -130,14 +127,8 @@ if __name__ == '__main__':
     ch.setFormatter(formatter)
     root.addHandler(ch)
   
-  logging.info('Starting scraper with configuration from "%s" and loglevel "%s"', options.city, loglevel)
+  logging.info('Starting scraper with configuration from "%s" and loglevel "%s"', config['city']['_id'], loglevel)
 
-  # setup db
-  db = None
-  if config.DB_TYPE == 'mongodb':
-    import db.mongodb
-    db = db.mongodb.MongoDatabase(config, options)
-    db.setup(config)
 
   # queue status
   if options.status:
@@ -168,12 +159,26 @@ if __name__ == '__main__':
     options.workfromqueue = True
   
   # TODO: Autodetect basic type
-  if config.SCRAPER_TYPE == 'SESSIONNET':
+  if config['scraper']['type'] == 'sessionnet-asp' or config['scraper']['type'] == 'sessionnet-php':
     scraper = ScraperSessionNet(config, db, options)
-  elif config.SCRAPER_TYPE == 'ALLRIS':
+  elif config['scraper']['type'] == 'allris':
     scraper = ScraperAllRis(config, db, options)
   
   scraper.guess_system()
+  # person
+  if options.person_id:
+    #scraper.find_person() #should be part of scraper
+    #scraper.get_person(person_id=int(options.person_id))
+    scraper.get_person_organization(person_id=int(options.person_id)) #should be part of scraper
+  if options.person_url:
+    #scraper.find_person() #should be part of scraper
+    #scraper.get_person(person_url=options.person_url)
+    scraper.get_person_organization(person_url=options.person_url) #should be part of scraper
+  # organization
+  if options.organization_id:
+    scraper.get_organization(organization_id=int(options.organization_id))
+  if options.organization_url:
+    scraper.get_organization(organization_url=options.organization_url)
   # meeting
   if options.meeting_id:
     scraper.get_meeting(meeting_id=int(options.meeting_id))
@@ -184,20 +189,6 @@ if __name__ == '__main__':
     scraper.get_paper(paper_id=int(options.paper_id))
   if options.paper_url:
     scraper.get_paper(paper_url=options.paper_url)
-  # committee
-  if options.committee_id:
-    scraper.get_committee(committee_id=int(options.committee_id))
-  if options.committee_url:
-    scraper.get_committee(committee_url=options.committee_url)
-  # person
-  if options.person_id:
-    scraper.find_person()
-    #scraper.get_person(person_id=int(options.person_id))
-    scraper.get_person_committee(person_id=int(options.person_id))
-  if options.person_url:
-    scraper.find_person()
-    #scraper.get_person(person_url=options.person_url)
-    scraper.get_person_committee(person_url=options.person_url)
 
 
   if options.start_month:

@@ -27,23 +27,27 @@ from base import Base
 import filters
 
 
-class Agendaitem(Base):
+class AgendaItem(Base):
   """
   A agendaitem class
   """
-  def __init__(self, identifier=None, numeric_id=None, sequence_number = None, public=None,
-      title=None, result=None, result_details=None, resolution_text=None, original_url=None,
-      meeting=None, paper=None):
-    self.identifier = identifier
-    self.numeric_id = numeric_id
-    self.sequence_number = sequence_number
+  def __init__(self, originalId=None, body=None, originalUrl=None, created=None, modified=None, keyword=None,
+               meeting=None, number=None, name=None, public=None, consultation=None, result=None,
+               resolution=None, auxiliaryFile=None):
+    self.body = body
+    self.originalId = originalId
+    self.originalUrl = originalUrl
+    self.created = created
+    self.modified = modified
+    self.keyword = keyword
+    
+    self.meeting = meeting #generated(?)
+    self.number = number
+    self.name = name
     self.public = public
-    self.title = title
+    self.consultation = consultation #list(?)
     self.result = result
-    self.result_details = result_details
-    self.resolution_text = resolution_text
-    self.original_url = original_url
-    # Relations
-    self.meeting = meeting
-    self.paper = paper
-    super(Agendaitem, self).__init__()
+    self.resolution = resolution
+    self.auxiliaryFile = auxiliaryFile #list of file
+    
+    super(AgendaItem, self).__init__()

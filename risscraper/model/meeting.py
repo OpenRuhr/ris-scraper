@@ -31,25 +31,37 @@ class Meeting(Base):
   """
   A meeting class
   """
-  def __init__(self, identifier=None, numeric_id = None, title=None,
-      start=None, end=None, sequence_number=None, type=None, room=None, address=None, original_url=None,
-      committee=None, person=None, agendaitem=None, paper=None, document=None):
-    self.identifier = identifier
-    self.numeric_id = numeric_id
-    self.title = title
+  def __init__(self, originalId=None, body=None, originalUrl=None, created=None, modified=None, keyword=None,
+               name=None, shortName=None, start=None, end=None, streetAdress=None, postalCode=None, locality=None,
+               organization=None, chairPerson=None, scribe=None, participant=None, invited=None, attendant=None,
+               invitation=None, resultsProtocol=None, verbatimProtocol=None, auxiliaryFile=None, agendaItem=None, nameShort=None):
+    self.originalId = originalId
+    self.body = body
+    self.originalUrl = originalUrl
+    self.created = created
+    self.modified = modified
+    self.keyword = keyword
+    
+    self.name = name
+    self.shortName = shortName
     self.x_start = start
     self.x_end = end
-    self.sequence_number = sequence_number
-    self.type = type
-    self.room = room
-    self.address = address
-    self.original_url = original_url
-    # Collections = Relations
-    self.committee = committee
-    self.person = person
-    self.agendaitem = agendaitem
-    self.paper = paper
-    self.document = document
+    self.streetAddress = streetAdress
+    self.postalCode = postalCode
+    self.locality = locality
+    self.organization = organization #list
+    self.chairPerson = chairPerson
+    self.scribe = scribe
+    self.participant = participant #list depreciated
+    self.invited = invited #list
+    self.attendant = attendant #list
+    
+    self.invitation = invitation #list of file
+    self.resultsProtocol = resultsProtocol #file
+    self.verbatimProtocol = verbatimProtocol #file
+    self.auxiliaryFile = auxiliaryFile #list of file
+    self.agendaItem = agendaItem #list of agendaitem
+    
     super(Meeting, self).__init__()
 
   @property

@@ -33,18 +33,19 @@ import sys
 from lxml import etree
 from StringIO import StringIO
 import hashlib
-#import pprint
 import magic
 import os
 import logging
 
-from model.agendaitem import Agendaitem
 from model.body import Body
-from model.committee import Committee
-from model.document import Document
-from model.meeting import Meeting
-from model.paper import Paper
 from model.person import Person
+from model.membership import Membership
+from model.organization import Organization
+from model.meeting import Meeting
+from model.consultation import Consultation
+from model.paper import Paper
+from model.agendaitem import AgendaItem
+from model.file import File
 
 class ScraperSessionNet(object):
 
@@ -58,7 +59,7 @@ class ScraperSessionNet(object):
     # mechanize user agent
     self.user_agent = mechanize.Browser()
     self.user_agent.set_handle_robots(False)
-    self.user_agent.addheaders = [('User-agent', config.USER_AGENT_NAME)]
+    self.user_agent.addheaders = [('User-agent', config['scraper']['user_agent_name'])]
     # Queues
     if self.options.workfromqueue:
       self.person_queue = queue.Queue('SESSIONNET_PERSON', config, db)
@@ -80,7 +81,7 @@ class ScraperSessionNet(object):
     while self.person_queue.has_next():
       job = self.person_queue.get()
       #self.get_person(committee_id=job['key'])
-      self.get_person_committee(person_id=job['key'])
+      self.get_person_organization(person_id=job['key'])
       self.person_queue.resolve_job(job)
     while self.meeting_queue.has_next():
       job = self.meeting_queue.get()
@@ -101,29 +102,28 @@ class ScraperSessionNet(object):
     Tries to find out which SessionNet version we are working with
     and adapts configuration
     """
-    time.sleep(self.config.WAIT_TIME)
+    time.sleep(self.config['scraper']['wait_time'])
     # requesting the base URL. This is usually redirected
-    try:
-      response = self.user_agent.open(self.config.BASE_URL)
-    except urllib2.HTTPError, e:
-      if e.code == 404:
-        sys.stderr.write("URL not found (HTTP 404) error caught: %s\n" % self.config.BASE_URL)
-        sys.stderr.write("Please check BASE_URL in your configuration.\n")
-        sys.exit(1)
-    url = response.geturl()
-    assert (url != self.config.BASE_URL), "No redirect"
-    if url.endswith('.php'):
-      self.template_system = 'PHP'
-    elif url.endswith('.asp'):
-      self.template_system = 'ASP'
-    else:
-      logging.critical("Cannot guess template system from URL '%s'", url)
-      sys.stderr.write("CRITICAL ERROR: Cannot guess template system from URL '%s'\n" % url)
-      # there is no point in going on here.
-      sys.exit(1)
-    self.urls = self.config.URLS[self.template_system]
-    self.xpath = self.config.XPATH[self.template_system]
-    logging.info("Found %s template system.", self.template_system)
+    #try:
+    #  response = self.user_agent.open(self.config['scraper']['base_url'])
+    #except urllib2.HTTPError, e:
+    #  if e.code == 404:
+    #    sys.stderr.write("URL not found (HTTP 404) error caught: %s\n" % self.config['scraper']['base_url'])
+    #    sys.stderr.write("Please check BASE_URL in your configuration.\n")
+    #    sys.exit(1)
+    #url = response.geturl()
+    #assert (url != self.config['scraper']['base_url']), "No redirect"
+    #if url.endswith('.php'):
+    #  self.template_system = 'php'
+    #elif url.endswith('.asp'):
+    #  self.template_system = 'asp'
+    #else:
+    #  logging.critical("Cannot guess template system from URL '%s'", url)
+    #  sys.stderr.write("CRITICAL ERROR: Cannot guess template system from URL '%s'\n" % url)
+    #  # there is no point in going on here.
+    #  sys.exit(1)
+    self.urls = self.config['scraper'][self.config['scraper']['type']]['urls']
+    self.xpath = self.config['scraper'][self.config['scraper']['type']]['xpath']
 
 
   def find_person(self):
@@ -131,10 +131,10 @@ class ScraperSessionNet(object):
     Load committee details for the given detail page URL or numeric ID
     """
     # Read either person_id or committee_url from the opposite
-    user_overview_url = self.urls['PERSON_OVERVIEW_PRINT_PATTERN']
+    user_overview_url = self.urls['PERSON_OVERVIEW_PRINT_PATTERN'] % self.config['scraper']['base_url']
     logging.info("Getting user overview from %s", user_overview_url)
     
-    time.sleep(self.config.WAIT_TIME)
+    time.sleep(self.config['scraper']['wait_time'])
     response = self.get_url(user_overview_url)
     if not response:
       return
@@ -156,62 +156,38 @@ class ScraperSessionNet(object):
           parsed = parse.search(self.urls['PERSON_DETAIL_PARSE_PATTERN_ALT'], link[0].get('href'))
         if parsed:
           person_id = parsed['person_id']
-          current_person = Person(numeric_id=person_id)
+          current_person = Person(originalId=person_id)
       if current_person:
         tds = tr.xpath('.//td')
         if len(tds):
           if len(tds[0]):
             person_name = tds[0][0].text.strip()
             if person_name:
-              current_person.title = person_name
+              current_person.name = person_name
         if len(tds) > 1:
           person_party = tds[1].text.strip()
           if person_party:
-            if person_party in self.config.PARTY_ALIAS:
-              person_party = self.config.PARTY_ALIAS[person_party]
-            current_person.committee = [{'committee': Committee(identifier=person_party, title=person_party, type='party')}]
+            for party_alias in self.config['scraper']['party_alias']:
+              if party_alias[0] == person_party:
+                person_party = party_alias[1]
+                break
+            new_organization = Organization(originalId=person_party,
+                                            name=person_party,
+                                            classification='party')
+            new_membership = Membership(originalId=unicode(person_id) + '-' + person_party,
+                                        organization=new_organization)
+            current_person.membership = [new_membership]
         if current_person:
           if hasattr(self, 'person_queue'):
-            self.person_queue.add(current_person.numeric_id)
+            self.person_queue.add(current_person.originalId)
           self.db.save_person(current_person)
     return
 
-  def find_meeting(self, start_date=None, end_date=None):
-    """
-    Find meetings (sessions) within a given time frame and add them to the session queue.
-    """
-    # list of (year, month) tuples to work from
-    start_month = start_date.month
-    end_months = (end_date.year - start_date.year) * 12 + end_date.month + 1
-    monthlist = [(yr, mn) for (yr, mn) in (
-      ((m - 1) / 12 + start_date.year, (m - 1) % 12 + 1) for m in range(start_month, end_months)
-    )]
-  
-    for (year, month) in monthlist:
-      url = self.urls['CALENDAR_MONTH_PRINT_PATTERN'] % (year, month)
-      logging.info("Looking for meetings (sessions) in %04d-%02d at %s", year, month, url)
-      time.sleep(self.config.WAIT_TIME)
-      response = self.user_agent.open(url)
-      html = response.read()
-      html = html.replace('&nbsp;', ' ')
-      parser = etree.HTMLParser()
-      dom = etree.parse(StringIO(html), parser)
-      found = 0
-      for link in dom.xpath('//a'):
-        href = link.get('href')
-        if href is None:
-          continue
-        parsed = parse.search(self.urls['SESSION_DETAIL_PARSE_PATTERN'], href)
-        if hasattr(self, 'meeting_queue') and parsed is not None:
-          self.meeting_queue.add(int(parsed['meeting_id']))
-          found += 1
-      if found == 0:
-        logging.info("No meetings(sessions) found for month %04d-%02d", year, month)
-  
+  """
   def get_person(self, person_url=None, person_id=None):
-    """
+    ""
     Load committee details for the given detail page URL or numeric ID
-    """
+    ""
     # Read either person_id or committee_url from the opposite
     if person_id is not None:
       person_url = self.urls['COMMITTEE_DETAIL_PRINT_PATTERN_FULL'] % person_id
@@ -221,9 +197,9 @@ class ScraperSessionNet(object):
   
     logging.info("Getting meeting (committee) %d from %s", person_id, person_url)
     
-    committee = Committee(numeric_id=person_id)
+    organisation = Organisation(numeric_id=person_id)
     
-    time.sleep(self.config.WAIT_TIME)
+    time.sleep(self.config['scraper']['wait_time'])
     response = self.get_url(person_url)
     if not response:
       return
@@ -245,23 +221,24 @@ class ScraperSessionNet(object):
         for td in tds:
           print td[0].text
     return
+  """
   
-  def get_person_committee(self, person_committee_url=None, person_id=None):
+  def get_person_organization(self, person_organization_url=None, person_id=None):
     """
     Load committee details for the given detail page URL or numeric ID
     """
     # Read either committee_id or committee_url from the opposite
     if person_id is not None:
-      person_committee_url = self.urls['PERSON_COMMITTEE_PRINT_PATTERN'] % person_id
-    elif person_committee_url is not None:
-      parsed = parse.search(self.urls['PERSON_COMMITTEE_PRINT_PATTERN'], person_committee_url)
+      person_committee_url = self.urls['PERSON_ORGANIZATION_PRINT_PATTERN'] % (self.config['scraper']['base_url'], person_id)
+    elif person_organization_url is not None:
+      parsed = parse.search(self.urls['PERSON_ORGANIZATION_PRINT_PATTERN'], person_organization_url)
       person_id = parsed['person_id']
   
-    logging.info("Getting meeting (committee) %d from %s", person_id, person_committee_url)
+    logging.info("Getting person %d organizations from %s", person_id, person_committee_url)
     
-    person = Person(numeric_id=person_id)
+    person = Person(originalId=person_id)
     
-    time.sleep(self.config.WAIT_TIME)
+    time.sleep(self.config['scraper']['wait_time'])
     response = self.get_url(person_committee_url)
     if not response:
       return
@@ -273,10 +250,10 @@ class ScraperSessionNet(object):
     parser = etree.HTMLParser()
     dom = etree.parse(StringIO(html), parser)
     
-    trs = dom.xpath(self.xpath['PERSON_COMMITTEE_LINES'])
-    committees = []
+    trs = dom.xpath(self.xpath['PERSON_ORGANIZATION_LINES'])
+    organisations = []
+    memberships = []
     for tr in trs:
-      new_committee = None
       tds = tr.xpath('.//td')
       long_info = False
       if len(tds) == 5:
@@ -289,28 +266,33 @@ class ScraperSessionNet(object):
           if len(href_tmp) == 2:
             if href_tmp[1][0:10] == '__cgrname=':
               href = href_tmp[0]
-          parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN'], href)
+          parsed = parse.search(self.urls['ORGANIZATION_DETAIL_PARSE_PATTERN'], href)
           if not parsed:
-            parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN_FULL'], href)
+            parsed = parse.search(self.urls['ORGANIZATION_DETAIL_PARSE_PATTERN_FULL'], href)
           if parsed is not None:
-            new_committee = { 'committee': Committee(numeric_id=int(parsed['committee_id']))}
-            new_committee['committee'].identifier = tds[0][0].text
-            new_committee['committee'].title = tds[0][0].text
+            new_organisation = Organization(originalId=int(parsed['committee_id']))
+            new_organisation.name = tds[0][0].text
         else:
-          new_committee = {'committee': Committee(identifier=tds[0].text)}
-        if new_committee and long_info:
-          new_committee['position'] = tds[2].text
+          new_organisation = Organization(originalId=tds[0].text)
+        if new_organisation and long_info:
+          new_membership = Membership()
+          membership_original_id = originalId=unicode(person_id) + '-' + unicode(new_organisation.originalId)
+          if tds[2].text:
+            new_membership.role = tds[2].text
           if tds[3].text:
-            new_committee['start'] = tds[3].text
+            new_membership.startDate = tds[3].text
+            membership_original_id += '-' + tds[3].text
           if tds[4].text:
-            new_committee['end'] = tds[4].text
+            new_membership.endDate = tds[4].text
+            membership_original_id += '-' + tds[4].text
+          new_membership.originalId = membership_original_id
+          new_membership.organization = new_organisation
+          memberships.append(new_membership)
         else:
-          if not new_committee:
+          if not new_organisation:
             logging.error("Bad Table Structure in %s", person_committee_url)
-      if new_committee:
-        committees.append(new_committee)
-    if committees:
-      person.committee = committees
+    if memberships:
+      person.membership = memberships
     oid = self.db.save_person(person)
     logging.info("Person %d stored with _id %s", person_id, oid)
     return
@@ -320,22 +302,55 @@ class ScraperSessionNet(object):
     # TODO
     pass
 
+  def find_meeting(self, start_date=None, end_date=None):
+    """
+    Find meetings (sessions) within a given time frame and add them to the session queue.
+    """
+    # list of (year, month) tuples to work from
+    start_month = start_date.month
+    end_months = (end_date.year - start_date.year) * 12 + end_date.month + 1
+    monthlist = [(yr, mn) for (yr, mn) in (
+      ((m - 1) / 12 + start_date.year, (m - 1) % 12 + 1) for m in range(start_month, end_months)
+    )]
+  
+    for (year, month) in monthlist:
+      url = self.urls['CALENDAR_MONTH_PRINT_PATTERN'] % (self.config['scraper']['base_url'], year, month)
+      logging.info("Looking for meetings (sessions) in %04d-%02d at %s", year, month, url)
+      time.sleep(self.config['scraper']['wait_time'])
+      response = self.user_agent.open(url)
+      html = response.read()
+      html = html.replace('&nbsp;', ' ')
+      parser = etree.HTMLParser()
+      dom = etree.parse(StringIO(html), parser)
+      found = 0
+      for link in dom.xpath('//a'):
+        href = link.get('href')
+        if href is None:
+          continue
+        parsed = parse.search(self.urls['MEETING_DETAIL_PARSE_PATTERN'], href)
+        if hasattr(self, 'meeting_queue') and parsed is not None:
+          self.meeting_queue.add(int(parsed['meeting_id']))
+          found += 1
+      if found == 0:
+        logging.info("No meetings(sessions) found for month %04d-%02d", year, month)
+  
+
   def get_meeting(self, meeting_url=None, meeting_id=None):
     """
     Load meeting details for the given detail page URL or numeric ID
     """
     # Read either meeting_id or meeting_url from the opposite
     if meeting_id is not None:
-      meeting_url = self.urls['SESSION_DETAIL_PRINT_PATTERN'] % meeting_id
+      meeting_url = self.urls['MEETING_DETAIL_PRINT_PATTERN'] % (self.config["scraper"]["base_url"], meeting_id)
     elif meeting_url is not None:
-      parsed = parse.search(self.urls['SESSION_DETAIL_PARSE_PATTERN'], meeting_url)
+      parsed = parse.search(self.urls['MEETING_DETAIL_PARSE_PATTERN'], meeting_url)
       meeting_id = parsed['meeting_id']
   
     logging.info("Getting meeting (session) %d from %s", meeting_id, meeting_url)
   
-    meeting = Meeting(numeric_id=meeting_id)
+    meeting = Meeting(originalId=meeting_id)
     
-    time.sleep(self.config.WAIT_TIME)
+    time.sleep(self.config['scraper']['wait_time'])
     response = self.get_url(meeting_url)
     if not response:
       return
@@ -370,17 +385,17 @@ class ScraperSessionNet(object):
     except:
       pass
   
-    meeting.original_url = meeting_url
+    meeting.originalUrl = meeting_url
     # Session title
     try:
-      meeting.title = dom.xpath(self.xpath['SESSION_DETAIL_TITLE'])[0].text
+      meeting.name = dom.xpath(self.xpath['MEETING_DETAIL_TITLE'])[0].text
     except:
-      logging.critical('Cannot find session title element using XPath SESSION_DETAIL_TITLE')
-      raise TemplateError('Cannot find session title element using XPath SESSION_DETAIL_TITLE')
+      logging.critical('Cannot find session title element using XPath MEETING_DETAIL_TITLE')
+      raise TemplateError('Cannot find session title element using XPath MEETING_DETAIL_TITLE')
   
     # Committe link
     #try:
-    #  links = dom.xpath(self.xpath['SESSION_DETAIL_COMMITTEE_LINK'])
+    #  links = dom.xpath(self.xpath['MEETING_DETAIL_COMMITTEE_LINK'])
     #  for link in links:
     #    href = link.get('href')
     #    parsed = parse.search(self.urls['COMMITTEE_DETAIL_PARSE_PATTERN'], href)
@@ -389,14 +404,14 @@ class ScraperSessionNet(object):
     #      if hasattr(self, 'committee_queue'):
     #        self.committee_queue.add(int(parsed['committee_id']))
     #except:
-    #  logging.critical('Cannot find link to committee detail page using SESSION_DETAIL_COMMITTEE_LINK_XPATH')
-    #  raise TemplateError('Cannot find link to committee detail page using SESSION_DETAIL_COMMITTEE_LINK_XPATH')
+    #  logging.critical('Cannot find link to committee detail page using MEETING_DETAIL_COMMITTEE_LINK_XPATH')
+    #  raise TemplateError('Cannot find link to committee detail page using MEETING_DETAIL_COMMITTEE_LINK_XPATH')
   
     # Meeting identifier, date, address etc
-    tds = dom.xpath(self.xpath['SESSION_DETAIL_IDENTIFIER_TD'])
+    tds = dom.xpath(self.xpath['MEETING_DETAIL_IDENTIFIER_TD'])
     if len(tds) == 0:
-      logging.critical('Cannot find table fields using SESSION_DETAIL_IDENTIFIER_TD_XPATH at session ' + meeting_url)
-      raise TemplateError('Cannot find table fields using SESSION_DETAIL_IDENTIFIER_TD_XPATH at session ' + meeting_url)
+      logging.critical('Cannot find table fields using MEETING_DETAIL_IDENTIFIER_TD_XPATH at session ' + meeting_url)
+      raise TemplateError('Cannot find table fields using MEETING_DETAIL_IDENTIFIER_TD_XPATH at session ' + meeting_url)
     else:
       for n in range(0, len(tds)):
         try:
@@ -405,7 +420,7 @@ class ScraperSessionNet(object):
         except:
           continue
         if tdcontent == 'Sitzung:':
-          meeting.identifier = nextcontent
+          meeting.shortName = nextcontent
         # We don't need this any more because it's scraped in committee detail page(?)
         #elif tdcontent == 'Gremium:':
         #  meeting.committee_name = nextcontent
@@ -426,16 +441,17 @@ class ScraperSessionNet(object):
           meeting.address = " ".join(tds[n + 1].xpath('./text()'))
         elif tdcontent == 'Bezeichnung:':
           meeting.description = nextcontent
-        if not hasattr(meeting, 'identifier'):
-          logging.critical('Cannot find session identifier using XPath SESSION_DETAIL_IDENTIFIER_TD')
-          raise TemplateError('Cannot find session identifier using XPath SESSION_DETAIL_IDENTIFIER_TD')
+        # sense?
+        #if not hasattr(meeting, 'originalId'):
+        #  logging.critical('Cannot find session identifier using XPath MEETING_DETAIL_IDENTIFIER_TD')
+        #  raise TemplateError('Cannot find session identifier using XPath MEETING_DETAIL_IDENTIFIER_TD')
   
     # Agendaitems
-    found_documents = []
-    rows = dom.xpath(self.xpath['SESSION_DETAIL_AGENDA_ROWS'])
+    found_files = []
+    rows = dom.xpath(self.xpath['MEETING_DETAIL_AGENDAITEM_ROWS'])
     if len(rows) == 0:
-      logging.critical('Cannot find agenda using XPath SESSION_DETAIL_AGENDA_ROWS')
-      raise TemplateError('Cannot find agenda using XPath SESSION_DETAIL_AGENDA_ROWS')
+      logging.critical('Cannot find agenda using XPath MEETING_DETAIL_AGENDAITEM_ROWS')
+      raise TemplateError('Cannot find agenda using XPath MEETING_DETAIL_AGENDAITEM_ROWS')
       meeting.agendaitem = []
     else:
       agendaitems = []
@@ -462,56 +478,62 @@ class ScraperSessionNet(object):
           if agendaitem:
             agendaitems.append(agendaitem)
           # create new agendaitem
-          agendaitem = Agendaitem(numeric_id=int(row_id.rsplit('_', 1)[1]))
+          agendaitem = AgendaItem(originalId=int(row_id.rsplit('_', 1)[1]))
           if number is not None:
-            agendaitem.sequence_number = number
+            agendaitem.number = number
           # in some ris this is a link, sometimes not. test both.
           if len(fields[1].xpath('./a/text()')):
-            agendaitem.title = "; ".join(fields[1].xpath('./a/text()'))
+            agendaitem.name = "; ".join(fields[1].xpath('./a/text()'))
           elif len(fields[1].xpath('./text()')):
-            agendaitem.title = "; ".join(fields[1].xpath('./text()'))
+            agendaitem.name = "; ".join(fields[1].xpath('./text()'))
           # ignore no agendaitem information
-          if agendaitem.title == 'keine Tagesordnungspunkte':
+          if agendaitem.name == 'keine Tagesordnungspunkte':
             agendaitem = None
             continue
           agendaitem.public = public
           # paper links
-          links = row.xpath(self.xpath['SESSION_DETAIL_AGENDA_ROWS_SUBMISSION_LINK'])
+          links = row.xpath(self.xpath['MEETING_DETAIL_AGENDAITEM_ROWS_PAPER_LINK'])
+          consultations = []
           papers = []
           for link in links:
             href = link.get('href')
             if href is None:
               continue
-            parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
+            # links to papers
+            parsed = parse.search(self.urls['PAPER_DETAIL_PARSE_PATTERN'], href)
             if parsed is not None:
-              paper = Paper(numeric_id=int(parsed['paper_id']), identifier=link.text)
-              papers.append(paper)
+              consultation = Consultation(originalId=unicode(agendaitem.originalId) + unicode(parsed['paper_id']))
+              consultation.paper = Paper(originalId=int(parsed['paper_id'])) #, name=link.text #TODO: da stehen ab und an Zusatzinfos drin. Wohin damit?
+              consultations.append(consultation)
               # Add paper to paper queue
               if hasattr(self, 'paper_queue'):
                 self.paper_queue.add(int(parsed['paper_id']))
-          if len(papers):
-            agendaitem.paper = papers
+          if len(consultations) == 1:
+            agendaitem.consultation = consultations[0]
+          elif len(consultations) > 1:
+            logging.warn('Multible Papers found in an Agendaitem at %s' % meeting_url)
+          
           """
           Note: we don't scrape agendaitem-related documents for now,
           based on the assumption that they are all found via paper
           detail pages. All we do here is get a list of document IDs
-          in found_documents
+          in found_files
           """
           # find links
           links = row.xpath('.//a[contains(@href,"getfile.")]')
           for link in links:
             if not link.xpath('.//img'):
-              file_link = self.config.BASE_URL + link.get('href')
-              document_id = file_link.split('id=')[1].split('&')[0]
-              found_documents.append(document_id)
+              file_link = self.config['scraper']['base_url'] + link.get('href')
+              file_id = file_link.split('id=')[1].split('&')[0]
+              found_files.append(file_id)
           # find forms
           forms = row.xpath('.//form')
           for form in forms:
             for hidden_field in form.xpath('input'):
               if hidden_field.get('name') != 'DT':
                 continue
-              document_id = hidden_field.get('value')
-              found_documents.append(document_id)
+              file_id = hidden_field.get('value')
+              found_files.append(file_id)
         # Alternative für smc_tophz wegen Version 4.3.5 bi (Layout 3)
         elif ('smc_tophz' in row_classes) or (row.get('valign') == 'top' and row.get('debug') == '3'):
           # additional (optional row for agendaitem)
@@ -521,11 +543,15 @@ class ScraperSessionNet(object):
             label = label.strip()
             value = value.strip()
             if label in ['Ergebnis:', 'Beschluss:', 'Beratungsergebnis:']:
-              if value in self.config.RESULT_STRINGS:
-                agendaitem.result = self.config.RESULT_STRINGS[value]
-              else:
+              new_result_string = ''
+              for result_string in self.config['scraper']['result_strings']:
+                if result_string[0] == value:
+                  new_result_string = result_string[1]
+                  break
+              if not new_result_string:
+                new_result_string = self.db.save_result_string(value)
                 logging.warn("String '%s' not found in configured RESULT_STRINGS", value)
-              agendaitem.result = value
+              agendaitem.result = new_result_string
             elif label in ['Bemerkung:', 'Abstimmung:']:
               agendaitem.result_details = value
             # What's this?
@@ -538,18 +564,21 @@ class ScraperSessionNet(object):
           # Subheading (public / nonpublic part)
           if fields[0].text is not None and "Nicht öffentlich" in fields[0].text.encode('utf-8'):
             public = False
-      meeting.agendaitem = agendaitems
+      meeting.agendaItem = agendaitems
 
     # meeting-related documents
-    containers = dom.xpath(self.xpath['SESSION_DETAIL_ATTACHMENTS'])
+    containers = dom.xpath(self.xpath['MEETING_DETAIL_FILES'])
     for container in containers:
       classes = container.get('class')
       if classes is None:
         continue
       classes = classes.split(' ')
-      if self.xpath['SESSION_DETAIL_ATTACHMENTS_CONTAINER_CLASSNAME'] not in classes:
+      if self.xpath['MEETING_DETAIL_FILES_CONTAINER_CLASSNAME'] not in classes:
         continue
-      documents = []
+      invitations = []
+      resultsProtocol = None
+      verbatimProtocol = None
+      auxiliaryFile = []
       rows = container.xpath('.//tr')
       for row in rows:
         if not row.xpath('.//form'):
@@ -557,55 +586,65 @@ class ScraperSessionNet(object):
           for link in links:
             # ignore additional pdf icon links
             if not link.xpath('.//img'):
-              title = ' '.join(link.xpath('./text()')).strip()
-              file_link = self.config.BASE_URL + link.get('href')
-              document_id = file_link.split('id=')[1].split('&')[0]
-              if document_id in found_documents:
+              name = ' '.join(link.xpath('./text()')).strip()
+              file_link = self.config['scraper']['base_url'] + link.get('href')
+              file_id = file_link.split('id=')[1].split('&')[0]
+              if file_id in found_files:
                 continue
-              document = Document(
-                identifier=document_id,
-                numeric_id=document_id,
-                title=title,
-                original_url=file_link)
-              document = self.get_document_file(document=document, link=file_link)
-              if 'Einladung' in title:
-                document_type = 'invitation'
-              elif 'Niederschrift' in title:
-                document_type = 'results_protocol'
+              file = File(
+                originalId=file_id,
+                name=name,
+                originalUrl=file_link,
+                originalDownloadPossible = True)
+              file = self.get_file(file=file, link=file_link)
+              if 'Einladung' in name:
+                invitations.append(file)
+              elif 'Niederschrift' in name:
+                if resultsProtocol:
+                  logging.warn('Two resultsProtocols found at %s' % meeting_url)
+                else:
+                  resultsProtocol = file
               else:
-                document_type = 'misc'
-              documents.append({'relation': document_type, 'document': document})
-              found_documents.append(document_id)
+                auxiliaryFile.append(file)
+              found_files.append(file_id)
         else:
           forms = row.xpath('.//form')
           for form in forms:
-            title = " ".join(row.xpath('./td/text()')).strip()
+            name = " ".join(row.xpath('./td/text()')).strip()
             for hidden_field in form.xpath('input'):
               if hidden_field.get('name') != 'DT':
                 continue
-              document_id = hidden_field.get('value')
+              file_id = hidden_field.get('value')
               # make sure to add only those which aren't agendaitem-related
-              if document_id not in found_documents:
-                document = Document(
-                  identifier=document_id,
-                  numeric_id=document_id,
-                  title=title
+              if file_id not in found_files:
+                file = File(
+                  originalId=file_id,
+                  name=name,
+                  originalDownloadPossible = False
                 )
                 # Traversing the whole mechanize response to submit this form
                 for mform in mechanize_forms:
                   for control in mform.controls:
-                    if control.name == 'DT' and control.value == document_id:
-                      document = self.get_document_file(document, mform)
-                if 'Einladung' in title:
-                  document_type = 'invitation'
-                elif 'Niederschrift' in title:
-                  document_type = 'results_protocol'
+                    if control.name == 'DT' and control.value == file_id:
+                      file = self.get_file(file, mform)
+                if 'Einladung' in name:
+                  invitations.append(file)
+                elif 'Niederschrift' in name:
+                  if resultsProtocol:
+                    logging.warn('Two resultsProtocols found at %s' % meeting_url)
+                  else:
+                    resultsProtocol = file
                 else:
-                  document_type = 'misc'
-                documents.append({'relation': document_type, 'document': document})
-                found_documents.append(document_id)
-      if len(documents):
-        meeting.document = documents
+                  auxiliaryFile.append(file)
+                found_files.append(file_id)
+      if len(invitations):
+        meeting.invitation = invitations
+      if resultsProtocol:
+        meeting.resultsProtocol = resultsProtocol
+      if verbatimProtocol:
+        meeting.verbatimProtocol = verbatimProtocol
+      if len(auxiliaryFile):
+        meeting.auxiliaryFile = auxiliaryFile
     oid = self.db.save_meeting(meeting)
     logging.info("Meeting %d stored with _id %s", meeting_id, oid)
 
@@ -617,14 +656,14 @@ class ScraperSessionNet(object):
     """
     # Read either paper_id or paper_url from the opposite
     if paper_id is not None:
-      paper_url = self.urls['SUBMISSION_DETAIL_PRINT_PATTERN'] % paper_id
+      paper_url = self.urls['PAPER_DETAIL_PRINT_PATTERN'] % (self.config["scraper"]["base_url"], paper_id)
     elif paper_url is not None:
-      parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], paper_url)
+      parsed = parse.search(self.urls['PAPER_DETAIL_PARSE_PATTERN'], paper_url)
       paper_id = parsed['paper_id']
   
     logging.info("Getting paper %d from %s", paper_id, paper_url)
     
-    paper = Paper(numeric_id=paper_id)
+    paper = Paper(originalId=paper_id)
     try_until = 1
     try_counter = 0
     try_found = False
@@ -632,7 +671,7 @@ class ScraperSessionNet(object):
     while (try_counter < try_until):
       try_counter += 1
       try_found = False
-      time.sleep(self.config.WAIT_TIME)
+      time.sleep(self.config['scraper']['wait_time'])
       try:
         response = self.user_agent.open(paper_url)
       except urllib2.HTTPError, e:
@@ -678,22 +717,24 @@ class ScraperSessionNet(object):
         except:
           pass
     
-        paper.original_url = paper_url
-        paper_related = []
+        paper.originalUrl = paper_url
+        superordinated_papers = []
+        subordinated_papers = []
+        
         # Paper title
         try:
-          stitle = dom.xpath(self.xpath['SUBMISSION_DETAIL_TITLE'])
+          stitle = dom.xpath(self.xpath['PAPER_DETAIL_TITLE'])
           paper.title = stitle[0].text
         except:
-          logging.critical('Cannot find paper title element using XPath SUBMISSION_DETAIL_TITLE')
-          raise TemplateError('Cannot find paper title element using XPath SUBMISSION_DETAIL_TITLE')
+          logging.critical('Cannot find paper title element using XPath PAPER_DETAIL_TITLE')
+          raise TemplateError('Cannot find paper title element using XPath PAPER_DETAIL_TITLE')
       
-        # Submission identifier, date, type etc
-        tds = dom.xpath(self.xpath['SUBMISSION_DETAIL_IDENTIFIER_TD'])
+        # Paper identifier, date, type etc
+        tds = dom.xpath(self.xpath['PAPER_DETAIL_IDENTIFIER_TD'])
         if len(tds) == 0:
-          logging.critical('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
+          logging.critical('Cannot find table fields using XPath PAPER_DETAIL_IDENTIFIER_TD')
           logging.critical('HTML Dump:' + html)
-          raise TemplateError('Cannot find table fields using XPath SUBMISSION_DETAIL_IDENTIFIER_TD')
+          raise TemplateError('Cannot find table fields using XPath PAPER_DETAIL_IDENTIFIER_TD')
         else:
           current_category = None
           for n in range(0, len(tds)):
@@ -702,24 +743,22 @@ class ScraperSessionNet(object):
             except:
               continue
             if tdcontent == 'Name:':
-              paper.identifier = tds[n + 1].text.strip()
+              paper.nameShort = tds[n + 1].text.strip()
+            # TODO: Dereferenzierung von Paper Type Strings
             elif tdcontent == 'Art:':
-              paper.type = tds[n + 1].text.strip()
+              paper.paperType = tds[n + 1].text.strip()
             elif tdcontent == 'Datum:':
-              paper.date = tds[n + 1].text.strip()
-            elif tdcontent == 'Name:':
-              paper.identifier = tds[n + 1].text.strip()
+              paper.publishedDate = tds[n + 1].text.strip()
             elif tdcontent == 'Betreff:':
-              paper.subject = '; '.join(tds[n + 1].xpath('./text()'))
+              paper.name = '; '.join(tds[n + 1].xpath('./text()'))
             elif tdcontent == 'Aktenzeichen:':
-              paper.reference_number = tds[n + 1].text.strip()
+              paper.reference = tds[n + 1].text.strip()
             elif tdcontent == 'Referenzvorlage:':
               link = tds[n + 1].xpath('a')[0]
               href = link.get('href')
-              parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
-              superordinated_paper = Paper(numeric_id=parsed['paper_id'], identifier=link.text.strip())
-              paper_related.append({ 'relation': 'superordinated',
-                              'paper':  superordinated_paper})
+              parsed = parse.search(self.urls['PAPER_DETAIL_PARSE_PATTERN'], href)
+              superordinated_paper = Paper(originalId=parsed['paper_id'], nameShort=link.text.strip())
+              superordinated_papers.append(superordinated_paper)
               # add superordinate paper to queue
               if hasattr(self, 'paper_queue'):
                 self.paper_queue.add(parsed['paper_id'])
@@ -728,10 +767,9 @@ class ScraperSessionNet(object):
               current_category = 'subordinates'
               for link in tds[n + 1].xpath('a'):
                 href = link.get('href')
-                parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
-                subordinated_paper = Paper(numeric_id=parsed['paper_id'], identifier=link.text.strip())
-                paper_related.append({ 'relation': 'subordinated',
-                              'paper':  subordinated_paper})
+                parsed = parse.search(self.urls['PAPER_DETAIL_PARSE_PATTERN'], href)
+                subordinated_paper = Paper(originalId=parsed['paper_id'], nameShort=link.text.strip())
+                subordinated_papers.append(subordinated_paper)
                 if hasattr(self, 'paper_queue') and parsed is not None:
                   # add subordinate paper to queue
                   self.paper_queue.add(parsed['paper_id'])
@@ -739,47 +777,47 @@ class ScraperSessionNet(object):
               if current_category == 'subordinates' and len(tds) > n+1:
                 for link in tds[n + 1].xpath('a'):
                   href = link.get('href')
-                  parsed = parse.search(self.urls['SUBMISSION_DETAIL_PARSE_PATTERN'], href)
-                  subordinated_paper = Paper(numeric_id=parsed['paper_id'], identifier=link.text.strip())
-                  paper_related.append({ 'relation': 'subordinated',
-                                'paper':  subordinated_paper})
+                  parsed = parse.search(self.urls['PAPER_DETAIL_PARSE_PATTERN'], href)
+                  subordinated_paper = Paper(originalId=parsed['paper_id'], nameShort=link.text.strip())
+                  subordinated_papers.append(subordinated_paper)
                   if hasattr(self, 'paper_queue') and parsed is not None:
                     self.paper_queue.add(parsed['paper_id'])
-          if len(paper_related):
-            paper.paper = paper_related
-          if not hasattr(paper, 'identifier'):
-            logging.critical('Cannot find paper identifier using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
-            raise TemplateError('Cannot find paper identifier using SESSION_DETAIL_IDENTIFIER_TD_XPATH')
+          if len(subordinated_papers):
+            paper.subordinatedPaper = subordinated_papers
+          if len(superordinated_papers):
+            paper.superordinatedPaper = superordinated_papers
+          if not hasattr(paper, 'originalId'):
+            logging.critical('Cannot find paper identifier using MEETING_DETAIL_IDENTIFIER_TD')
+            raise TemplateError('Cannot find paper identifier using MEETING_DETAIL_IDENTIFIER_TD')
       
         # "Beratungsfolge"(list of sessions for this paper)
         # This is currently not parsed for scraping, but only for
         # gathering session-document ids for later exclusion
-        found_documents = []
-        rows = dom.xpath(self.xpath['SUBMISSION_DETAIL_AGENDA_ROWS'])
+        found_files = [] #already changed: found_files, files. todo: document_foo
+        rows = dom.xpath(self.xpath['PAPER_DETAIL_AGENDA_ROWS'])
         for row in rows:
           # find forms
           formfields = row.xpath('.//input[@type="hidden"][@name="DT"]')
           for formfield in formfields:
-            document_id = formfield.get('value')
-            if document_id is not None:
-              found_documents.append(document_id)
+            file_id = formfield.get('value')
+            if file_id is not None:
+              found_files.append(file_id)
           # find links
           links = row.xpath('.//a[contains(@href,"getfile.")]')
           for link in links:
             if not link.xpath('.//img'):
-              file_link = self.config.BASE_URL + link.get('href')
-              document_id = file_link.split('id=')[1].split('&')[0]
-              found_documents.append(document_id)
+              file_link = self.config['scraper']['base_url'] + link.get('href')
+              file_id = file_link.split('id=')[1].split('&')[0]
+              found_files.append(file_id)
         # paper-related documents
-        documents = []
-        paper.document = []
-        containers = dom.xpath(self.xpath['SUBMISSION_DETAIL_ATTACHMENTS'])
+        files = []
+        containers = dom.xpath(self.xpath['PAPER_DETAIL_FILES'])
         for container in containers:
           try:
             classes = container.get('class').split(' ')
           except:
             continue
-          if self.xpath['SUBMISSION_DETAIL_ATTACHMENTS_CONTAINER_CLASSNAME'] not in classes:
+          if self.xpath['PAPER_DETAIL_FILES_CONTAINER_CLASSNAME'] not in classes:
             continue
           rows = container.xpath('.//tr')
           for row in rows:
@@ -789,67 +827,57 @@ class ScraperSessionNet(object):
               for link in links:
                 # ignore additional pdf icon links
                 if not link.xpath('.//img'):
-                  title = ' '.join(link.xpath('./text()')).strip()
-                  file_link = self.config.BASE_URL + link.get('href')
-                  document_id = file_link.split('id=')[1].split('&')[0]
-                  if document_id in found_documents:
+                  name = ' '.join(link.xpath('./text()')).strip()
+                  file_link = self.config['scraper']['base_url'] + link.get('href')
+                  file_id = file_link.split('id=')[1].split('&')[0]
+                  if file_id in found_files:
                     continue
-                  document = Document(
-                    identifier=document_id,
-                    numeric_id=document_id,
-                    title=title,
-                    original_url=file_link)
-                  document = self.get_document_file(document=document, link=file_link)
-                  if 'Einladung' in title:
-                    document_type = 'invitation'
-                  elif 'Niederschrift' in title:
-                    document_type = 'results_protocol'
-                  else:
-                    document_type = 'misc'
-                  paper.document.append({'relation': document_type, 'document': document})
-                  found_documents.append(document_id)
+                  file = File(
+                    originalId=file_id,
+                    name=name,
+                    originalUrl=file_link,
+                    originalDownloadPossible = True)
+                  file = self.get_file(file=file, link=file_link)
+                  files.append(file)
+                  found_files.append(file_id)
+                  
             # no direct link, so we have to handle forms
             else:
               forms = row.xpath('.//form')
               for form in forms:
-                title = " ".join(row.xpath('./td/text()')).strip()
+                name = " ".join(row.xpath('./td/text()')).strip()
                 for hidden_field in form.xpath('input[@name="DT"]'):
-                  document_id = hidden_field.get('value')
-                  if document_id in found_documents:
+                  file_id = hidden_field.get('value')
+                  if file_id in found_files:
                     continue
-                  document = Document(
-                    identifier=document_id,
-                    numeric_id=document_id,
-                    title=title)
+                  file = File(
+                    originalId=file_id,
+                    name=name,
+                    originalDownloadPossible = False)
                   # Traversing the whole mechanize response to submit this form
                   for mform in mechanize_forms:
                     for control in mform.controls:
                       if control.name == 'DT' and control.value == document_id:
-                        document = self.get_document_file(document=document, form=mform)
-                        if 'Einladung' in title:
-                          document_type = 'invitation'
-                        elif 'Niederschrift' in title:
-                          document_type = 'results_protocol'
-                        else:
-                          document_type = 'misc'
-                        paper.document.append({'relation': document_type, 'document': document})
-                        found_documents.append(document_id)
-        if len(documents):
-          paper.document = documents
-        # forcing overwrite=True here
+                        file = self.get_file(file=file, form=mform)
+                        files.append(file)
+                        found_files.append(file_id)
+        if len(files):
+          paper.mainFile = files[0]
+        if len(files) > 1:
+          paper.auxiliaryFile = files[1:]
         oid = self.db.save_paper(paper)
 
-  def get_document_file(self, document, form=None, link=None):
+  def get_file(self, file, form=None, link=None):
     """
-    Loads the document file from the server and stores it into
-    the document object given as a parameter. The form
+    Loads the file from the server and stores it into
+    the file object given as a parameter. The form
     parameter is the mechanize Form to be submitted for downloading
-    the document.
+    the file.
   
-    The document parameter has to be an object of type
-    model.document.Document.
+    The file parameter has to be an object of type
+    model.file.File.
     """
-    logging.info("Getting document '%s'", document.identifier)
+    logging.info("Getting file '%s'", file.originalId)
     if form:
       mechanize_request = form.click()
     elif link:
@@ -864,54 +892,56 @@ class ScraperSessionNet(object):
         mform_response = mechanize.urlopen(mechanize_request)
         retry_counter = 4
         mform_url = mform_response.geturl()
-        if not self.list_in_string(self.urls['ATTACHMENT_DOWNLOAD_TARGET'], mform_url) and form:
+        if not self.list_in_string(self.urls['FILE_DOWNLOAD_TARGET'], mform_url) and form:
           logging.warn("Unexpected form target URL '%s'", mform_url)
-          return document
-        document.content = mform_response.read()
-        if ord(document.content[0]) == 32 and ord(document.content[1]) == 10:
-          document.content = document.content[2:]
-        document.mimetype = magic.from_buffer(document.content, mime=True)
-        document.filename = self.make_document_filename(document.identifier, document.mimetype)
+          return file
+        file.content = mform_response.read()
+        if ord(file.content[0]) == 32 and ord(file.content[1]) == 10:
+          file.content = file.content[2:]
+        file.mimetype = magic.from_buffer(file.content, mime=True)
+        file.filename = self.make_filename(file.originalId, file.mimetype)
       except mechanize.HTTPError as e:
         if e.code == 502:
           retry_counter = retry_counter + 1
           retry = True
           log.info("HTTP Error 502 while getting %s, try again", url)
-          time.sleep(self.config.WAIT_TIME * 5)
+          time.sleep(self.config['scraper']['wait_time'] * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
           return
-    return document
+    return file
   
-  def make_document_path(self, identifier):
+  def make_file_path(self, originalId):
     """
-    Creates a reconstructable foder hierarchy for documents
+    Creates a reconstructable foder hierarchy for files
     """
-    sha1 = hashlib.sha1(identifier).hexdigest()
+    sha1 = hashlib.sha1(originalId).hexdigest()
     firstfolder = sha1[0:1]   # erstes Zeichen von der Checksumme
     secondfolder = sha1[1:2]  # zweites Zeichen von der Checksumme
-    ret = (self.config.ATTACHMENT_FOLDER + os.sep + str(firstfolder) + os.sep +
-      str(secondfolder))
+    ret = os.path.join(self.config['attachment_folder'], str(self.config['city']['_id']), str(firstfolder), str(secondfolder))
     return ret
   
-  def make_document_filename(self, identifier, mimetype):
+  def make_filename(self, originalId, mimetype):
     ext = 'dat'
-    if mimetype in self.config.FILE_EXTENSIONS:
-      ext = self.config.FILE_EXTENSIONS[mimetype]
+    
+    for extension in self.config['file_extensions']:
+      if extension[0] == mimetype:
+        ext = extension[1]
+        break
     if ext == 'dat':
-      logging.warn("No entry in config.FILE_EXTENSIONS for %s at document id %s", mimetype, identifier)
+      logging.warn("No entry in config:main:file_extensions for %s at file id %s", mimetype, originalId)
     # Verhindere Dateinamen > 255 Zeichen
-    identifier = identifier[:192]
-    return identifier + '.' + ext
+    originalId = originalId[:192]
+    return originalId + '.' + ext
 
-  def save_document_file(self, content, identifier, mimetype):
+  def save_file(self, content, originalId, mimetype):
     """
-    Creates a reconstructable folder hierarchy for documents
+    Creates a reconstructable folder hierarchy for files
     """
-    folder = self.make_document_path(identifier)
+    folder = self.make_file_path(originalId)
     if not os.path.exists(folder):
       os.makedirs(folder)
-    path = folder + os.sep + self.make_document_filename(self, identifier, mimetype)
+    path = folder + os.sep + self.make_filename(self, originalId, mimetype)
     with open(path, 'wb') as f:
       f.write(content)
       f.close()
@@ -939,7 +969,7 @@ class ScraperSessionNet(object):
           retry_counter = retry_counter + 1
           retry = True
           log.info("HTTP Error 502 while getting %s, try again", url)
-          time.sleep(self.config.WAIT_TIME * 5)
+          time.sleep(self.config['scraper']['wait_time'] * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
           sys.stderr.write("CRITICAL ERROR:HTTP Error %s while getting %s" % (e.code, url))

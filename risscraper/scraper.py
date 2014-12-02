@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 """
-Copyright (c) 2012 Marian Steinbach
+Copyright (c) 2012 Marian Steinbach, Ernesto Ruge
 
 Hiermit wird unentgeltlich jeder Person, die eine Kopie der Software und
 der zugehörigen Dokumentationen (die "Software") erhält, die Erlaubnis

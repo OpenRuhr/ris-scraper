@@ -43,7 +43,7 @@ import re
 from pytz import timezone
 
 
-from model.agendaitem import Agendaitem
+from model.agendaitem import AgendaItem
 from model.body import Body
 from model.committee import Committee
 from model.document import Document

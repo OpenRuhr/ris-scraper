@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 """
-Copyright (c) 2012 Marian Steinbach
+Copyright (c) 2012 Marian Steinbach, Ernesto Ruge
 
 Hiermit wird unentgeltlich jeder Person, die eine Kopie der Software und
 der zugehörigen Dokumentationen (die "Software") erhält, die Erlaubnis
@@ -35,6 +35,10 @@ import re
 import translitcodec
 import pytz
 import datetime
+from bson.objectid import ObjectId
+from copy import deepcopy
+from uuid import uuid4
+import types
 
 
 class MongoDatabase(object):
@@ -42,11 +46,10 @@ class MongoDatabase(object):
   Database handler for a MongoDB backend
   """
 
-  def __init__(self, config, options):
-    client = MongoClient(config.DB_HOST, config.DB_PORT)
-    self.db = client[config.DB_NAME]
-    self.config = config
-    self.options = options
+  def __init__(self, base_config):
+    client = MongoClient(base_config.DB_HOST, base_config.DB_PORT)
+    self.db = client[base_config.DB_NAME]
+    self.base_config = base_config
     self.fs = gridfs.GridFS(self.db)
     self.slugify_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
@@ -55,18 +58,11 @@ class MongoDatabase(object):
     Initialize database, if not yet done. Shouln't destroy anything.
     """
     # body
-    self.db.body.ensure_index([('rs', ASCENDING)], unique=True)
-    #todo: put complete config in db
-    self.body_uid = self.db.body.find_one({'rs': config.RS})
-    if self.body_uid:
-      self.body_uid = self.body_uid['_id']
-    else:
-      self.body_uid = self.db.body.insert({
-        'rs': config.RS,
-        'title': config.CITY
-      })
+    self.config = config
+    self.db.body.ensure_index([('rgs', ASCENDING)], unique=True)
+    self.body_uid = config['city']['_id']
     
-    
+    """
     self.db.committee.ensure_index([('identifier', ASCENDING), ('body', ASCENDING)], unique=True)
     self.db.person.ensure_index([('identifier', ASCENDING), ('body', ASCENDING)], unique=True)
     self.db.organisation.ensure_index([('identifier', ASCENDING), ('body', ASCENDING)], unique=True)
@@ -112,32 +108,65 @@ class MongoDatabase(object):
     #self.db.attachments.ensure_index([('identifier', ASCENDING), ('rs', ASCENDING)], unique=True)
     self.db.fs.files.ensure_index(
       [
-        ('rs', ASCENDING),
+        ('body', ASCENDING),
         ('filename', ASCENDING),
         ('uploadDate', DESCENDING),
       ],
       unique=True)
-
+    """
   def erase(self):
     """
     Delete all data from database.
     """
-    self.db.queue.remove({'rs': self.config.RS})
-    self.db.committee.remove({'rs': self.config.RS})
-    self.db.person.remove({'rs': self.config.RS})
-    self.db.organisation.remove({'rs': self.config.RS})
-    self.db.meeting.remove({'rs': self.config.RS})
-    self.db.agendaitem.remove({'rs': self.config.RS})
-    self.db.paper.remove({'rs': self.config.RS})
-    self.db.document.remove({'rs': self.config.RS})
-    self.db.fs.files.remove({'rs': self.config.RS})
-    self.db.fs.chunks.remove({'rs': self.config.RS})
+    self.db.queue.remove({})
+    self.db.agendaitem.remove({})
+    self.db.consultation.remove({})
+    self.db.file.remove({})
+    self.db.legislativeterm.remove({})
+    self.db.location.remove({})
+    self.db.meeting.remove({})
+    self.db.membership.remove({})
+    self.db.organization.remove({})
+    self.db.paper.remove({})
+    self.db.person.remove({})
+    self.db.fs.files.remove({})
+    self.db.fs.chunks.remove({})
+
+  def get_config(self, body_uid):
+    """
+    Returns Config JSON
+    """
+    config = self.db.config.find_one()
+    if '_id' in config:
+      del config['_id']
+    local_config = self.db.body.find_one({'_id': ObjectId(body_uid)})
+    if 'config' in local_config:
+      config = self.merge_dict(config, local_config['config'])
+      del local_config['config']
+    config['city'] = local_config
+    return config
+
+  def dict_merge(self, a, b):
+    if not isinstance(b, dict):
+      return b
+    result = deepcopy(a)
+    for k, v in b.iteritems():
+      if k in result and isinstance(result[k], dict):
+        result[k] = self.dict_merge(result[k], v)
+      else:
+        result[k] = deepcopy(v)
+    return result
+
+  def save_result_string(self, result_string):
+    random_uid = uuid4()
+    self.db.body.config.scraper.result_strings.insert({'from': result_string, 'to': random_uid})
+    return random_uid
 
   def get_object(self, collection, key, value):
     """
     Return a document
     """
-    result = self.db[collection].find_one({key: value,'body':DBRef('body', id=self.body_uid)})
+    result = self.db[collection].find_one({key: value,'body': DBRef('body', id=self.body_uid)})
     return result
 
   def get_object_id(self, collection, key, value):
@@ -151,35 +180,40 @@ class MongoDatabase(object):
         return result['_id']
 
   def meeting_exists(self, id):
-    if self.get_object_id('meeting', 'identifier', id) is not None:
+    if self.get_object_id('meeting', 'externalId', id) is not None:
       return True
     return False
 
   def agendaitem_exists(self, id):
-    if self.get_object_id('agendaitem', 'identifier', id) is not None:
+    if self.get_object_id('agendaitem', 'externalId', id) is not None:
       return True
     return False
   
   def document_exists(self, id):
-    if self.get_object_id('document', 'identifier', id) is not None:
+    if self.get_object_id('document', 'externalId', id) is not None:
       return True
     return False
 
   def paper_exists(self, id):
-    if self.get_object_id('paper', 'identifier', id) is not None:
+    if self.get_object_id('paper', 'externalId', id) is not None:
       return True
     return False
   
-  def dereference_object(self, data_dict, object_type, sublist=False):
-    if object_type in data_dict:
+  def dereference_object(self, data_dict, attribute, datatype=False):
+    if attribute in data_dict:
       # replace object datasets with DBRef dicts
-      for n in range(len(data_dict[object_type])):
-        save_funct = getattr(self, 'save_' + object_type)
-        if sublist:
-          oid = save_funct(data_dict[object_type][n][object_type])
-        else:
-          oid = save_funct(data_dict[object_type][n])
-        data_dict[object_type][n] = DBRef(collection=object_type, id=oid)
+      if datatype:
+        save_funct = getattr(self, 'save_' + datatype)
+      else:
+        save_funct = getattr(self, 'save_' + attribute)
+        datatype = attribute
+      if isinstance(data_dict[attribute], list):
+        for n in range(len(data_dict[attribute])):
+          oid = save_funct(data_dict[attribute][n])
+          data_dict[attribute][n] = DBRef(collection=datatype, id=oid)
+      else:
+        oid = save_funct(data_dict[attribute])
+        data_dict[attribute] = DBRef(collection=datatype, id=oid)
     return data_dict
   
   
@@ -191,15 +225,14 @@ class MongoDatabase(object):
       oid = datatable.insert(data_dict)
       logging.info("%s %s inserted as new", object_type, oid)
       return oid
-    
     # update object
     else:
       berlin = pytz.timezone('Europe/Berlin')
       # compare old and new dict and then send update
-      logging.info("%s %s updated with _id %s", object_type, data_dict['identifier'], data_stored['_id'])
+      logging.info("%s %s updated with _id %s", object_type, data_dict['originalId'], data_stored['_id'])
       set_attributes = {}
       for key in data_dict.keys():
-        if key in ['last_modified']:
+        if key in ['lastModified']:
           continue
         if key not in data_stored:
           logging.debug("Key '%s' will be added to %s", key, object_type)
@@ -212,7 +245,7 @@ class MongoDatabase(object):
             logging.debug("Key '%s' in %s has changed", key, object_type)
             set_attributes[key] = data_dict[key]
       if set_attributes != {}:
-        set_attributes['last_modified'] = data_dict['last_modified']
+        set_attributes['lastModified'] = data_dict['lastModified']
         datatable = getattr(self.db, object_type)
         datatable.update({'_id': data_stored['_id']}, {'$set': set_attributes})
       return data_stored['_id']
@@ -221,230 +254,266 @@ class MongoDatabase(object):
     pass
 
   def create_slug(self, data_dict, object_type):
-    current_slug = self.slugify(data_dict['identifier'])
+    current_slug = self.slugify(data_dict['originalId'])
     slug_counter = 0
     while (True):
       dataset = self.get_object(object_type, 'slug', current_slug)
       if dataset:
-        if data_dict['identifier'] != dataset['identifier']:
+        if data_dict['originalId'] != dataset['originalId']:
           slug_counter += 1
-          current_slug = self.slugify(data_dict['identifier']) + '-' + str(slug_counter)
+          current_slug = self.slugify(data_dict['originalId']) + '-' + str(slug_counter)
         else:
           return current_slug
       else:
         return current_slug
 
   def save_person(self, person):
-    person_stored = self.get_object('person', 'numeric_id', person.numeric_id)
+    person_stored = self.get_object('person', 'originalId', person.originalId)
     
     person_dict = person.dict()
     
     # setting body
-    person_dict['body'] = [DBRef(collection='body',id=self.body_uid)]
+    person_dict['body'] = DBRef(collection='body',id=self.body_uid)
     
-    # ensure that there is an identifier
-    if 'identifier' not in person_dict:
-      if 'numeric_id' not in person_dict:
-        logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", person_dict.original_url)
-        return
-      else:
-        person_dict['identifier'] = str(person_dict['numeric_id'])
+    # ensure that there is an originalId
+    if 'originalId' not in person_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", person_dict.originalUrl)
     
     # dereference objects
-    person_dict = self.dereference_object(person_dict, 'committee', True)
+    person_dict = self.dereference_object(person_dict, 'membership')
     
     # create slug
-    person_dict['slug'] = self.slugify(person_dict['identifier'])
+    # person_dict['slug'] = self.slugify(person_dict['identifier'])
     
     # save data
     return self.save_object(person_dict, person_stored, 'person')
 
-  def save_committee(self, committee):
-    committee_stored = self.get_object('committee', 'identifier', committee.identifier)
-    committee_dict = committee.dict()
+  def save_membership(self, membership):
+    membership_stored = self.get_object('membership', 'originalId', membership.originalId)
+    
+    membership_dict = membership.dict()
     
     # setting body
-    committee_dict['body'] = [DBRef(collection='body',id=self.body_uid)]
+    membership_dict['body'] = DBRef(collection='body',id=self.body_uid)
     
-    # ensure that there is an identifier
-    if 'identifier' not in committee_dict:
-      if 'numeric_id' not in committee_dict:
-        logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", committee_dict.original_url)
-        return
-      else:
-        committee_dict['identifier'] = str(committee_dict['numeric_id'])
+    # ensure that there is an originalId
+    if 'originalId' not in membership_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", membership_dict.originalUrl)
     
     # dereference objects
+    membership_dict = self.dereference_object(membership_dict, 'organization')
+    #membership_dict = self.dereference_object(membership_dict, 'person') #TODO: Backref
     
     # create slug
-    committee_dict['slug'] = self.create_slug(committee_dict, 'committee')
+    # person_dict['slug'] = self.slugify(person_dict['identifier'])
     
     # save data
-    return self.save_object(committee_dict, committee_stored, 'committee')
+    return self.save_object(membership_dict, membership_stored, 'membership')
+
+  def save_organization(self, organization):
+    organization_stored = self.get_object('organization', 'originalId', organization.originalId)
+    organization_dict = organization.dict()
+    
+    # setting body
+    organization_dict['body'] = DBRef(collection='body',id=self.body_uid)
+    
+    # ensure that there is an originalId
+    if 'originalId' not in organization_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", organization_dict.originalUrl)
+    
+    # dereference objects
+    #organization_dict = self.dereference_object(organization_dict, 'meeting') #TODO: Backref
+    #organization_dict = self.dereference_object(organization_dict, 'membership') #TODO: Backref
+    
+    # create slug
+    organization_dict['slug'] = self.create_slug(organization_dict, 'committee')
+    
+    # save data
+    return self.save_object(organization_dict, organization_stored, 'organization')
   
   def save_meeting(self, meeting):
     """
     Write meeting object to database. This means dereferencing all associated objects as DBrefs
     """
-    meeting_stored = self.get_object('meeting', 'numeric_id', meeting.numeric_id)
+    meeting_stored = self.get_object('meeting', 'originalId', meeting.originalId)
     meeting_dict = meeting.dict()
 
     # setting body
-    meeting_dict['body'] = [DBRef(collection='body',id=self.body_uid)]
+    meeting_dict['body'] = DBRef(collection='body',id=self.body_uid)
     
-    # ensure that there is an identifier
-    if 'identifier' not in meeting_dict:
-      if 'numeric_id' not in meeting_dict:
-        logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", meeting_dict.original_url)
-        return
-      else:
-        meeting_dict['identifier'] = str(meeting_dict['numeric_id'])
+    # ensure that there is an originalId
+    if 'originalId' not in meeting_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", meeting_dict.originalUrl)
     
     # dereference items
-    meeting_dict = self.dereference_object(meeting_dict, 'committee')
-    meeting_dict = self.dereference_object(meeting_dict, 'agendaitem')
-    meeting_dict = self.dereference_object(meeting_dict, 'document', True)
+    meeting_dict = self.dereference_object(meeting_dict, 'organization')
+    meeting_dict = self.dereference_object(meeting_dict, 'agendaItem')
+    meeting_dict = self.dereference_object(meeting_dict, 'invitation', 'file')
+    meeting_dict = self.dereference_object(meeting_dict, 'resultsProtocol', 'file')
+    meeting_dict = self.dereference_object(meeting_dict, 'verbatimProtocol', 'file')
+    meeting_dict = self.dereference_object(meeting_dict, 'auxiliaryFile', 'file')
+    
     
     # create slug
-    meeting_dict['slug'] = self.slugify(meeting_dict['identifier'])
+    # meeting_dict['slug'] = self.slugify(meeting_dict['identifier'])
     
     # save data
     return self.save_object(meeting_dict, meeting_stored, 'meeting')
 
   
-  def save_agendaitem(self, agendaitem):
+  def save_agendaItem(self, agendaitem):
     """
     Write agendaitem object to database. This means dereferencing all associated objects as DBrefs
     """
-    agendaitem_stored = self.get_object('agendaitem', 'numeric_id', agendaitem.numeric_id)
+    agendaitem_stored = self.get_object('agendaitem', 'originalId', agendaitem.originalId)
     agendaitem_dict = agendaitem.dict()
 
     # setting body
-    agendaitem_dict['body'] = [DBRef(collection='body',id=self.body_uid)]
+    agendaitem_dict['body'] = DBRef(collection='body',id=self.body_uid)
     
-    # ensure that there is an identifier
-    if 'identifier' not in agendaitem_dict:
-      if 'numeric_id' not in agendaitem_dict:
-        logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", agendaitem_dict.original_url)
-        return
-      else:
-        agendaitem_dict['identifier'] = agendaitem_dict['numeric_id']
+    if 'originalId' not in agendaitem_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", agendaitem_dict.originalUrl)
     
     # dereference items
-    agendaitem_dict = self.dereference_object(agendaitem_dict, 'paper')
+    agendaitem_dict = self.dereference_object(agendaitem_dict, 'consultation')
+    # agendaitem_dict = self.dereference_object(agendaitem_dict, 'meeting') #TODO: Backref
     
     # create slug
-    agendaitem_dict['slug'] = str(self.slugify(agendaitem_dict['identifier']))
+    # agendaitem_dict['slug'] = str(self.slugify(agendaitem_dict['identifier']))
 
     return self.save_object(agendaitem_dict, agendaitem_stored, 'agendaitem')
   
+  def save_consultation(self, consultation):
+    """
+    Write consultation object to database. This means dereferencing all associated objects as DBrefs
+    """
+    consultation_stored = self.get_object('consultation', 'originalId', consultation.originalId)
+    consultation_dict = consultation.dict()
+
+    # setting body
+    consultation_dict['body'] = DBRef(collection='body',id=self.body_uid)
+    
+    
+    if 'originalId' not in consultation_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", consultation_dict.originalUrl)
+    
+    # dereference items
+    consultation_dict = self.dereference_object(consultation_dict, 'paper')
+    # consultation_dict = self.dereference_object(consultation_dict, 'agendaItem') #TODO: Backref
+    
+    # create slug
+    # agendaitem_dict['slug'] = str(self.slugify(agendaitem_dict['identifier']))
+
+    return self.save_object(consultation_dict, consultation_stored, 'consultation')
 
   def save_paper(self, paper):
     """Write paper to DB and return ObjectID"""
-    paper_stored = self.get_object('paper', 'numeric_id', paper.numeric_id)
+    paper_stored = self.get_object('paper', 'originalId', paper.originalId)
     paper_dict = paper.dict()
 
-    paper_dict['body'] = [DBRef(collection='body',id=self.body_uid)]
+    paper_dict['body'] = DBRef(collection='body',id=self.body_uid)
     
-    # ensure that there is an identifier
-    if 'identifier' not in paper_dict:
-      if 'numeric_id' not in paper_dict:
-        logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", paper_dict.original_url)
-        return
-      else:
-        paper_dict['identifier'] = str(paper_dict['numeric_id'])
+    if 'originalId' not in paper_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", paper_dict.originalUrl)
     
     # dereference items
-    paper_dict = self.dereference_object(paper_dict, 'paper', True)
-    paper_dict = self.dereference_object(paper_dict, 'document', True)
+    paper_dict = self.dereference_object(paper_dict, 'relatedPaper', 'paper')
+    paper_dict = self.dereference_object(paper_dict, 'mainFile', 'file')
+    paper_dict = self.dereference_object(paper_dict, 'auxiliaryFile', 'file')
+    paper_dict = self.dereference_object(paper_dict, 'originator', 'organization')
+    paper_dict = self.dereference_object(paper_dict, 'underDirectionOf', 'organization')
+    paper_dict = self.dereference_object(paper_dict, 'superordinatedPaper', 'paper')
+    paper_dict = self.dereference_object(paper_dict, 'subordinatedPaper', 'paper')
+    #paper_dict = self.dereference_object(paper_dict, 'consultation') #TODO: Backref
     
     # create slug
-    paper_dict['slug'] = self.slugify(paper_dict['identifier'])
+    # paper_dict['slug'] = self.slugify(paper_dict['identifier'])
     
     return self.save_object(paper_dict, paper_stored, 'paper')
   
   
-  def save_document(self, document):
+  def save_file(self, file):
     """
-    Write document to DB and return ObjectID.
-    - If the document already exists, the existing document
+    Write file to DB and return ObjectID.
+    - If the file already exists, the existing file
       is updated in the database.
-    - If the document.content has changed, a new GridFS file version
+    - If the file.content has changed, a new GridFS file version
       is added.
-    - If document is depublished, no new file is stored.
+    - If file is depublished, no new file is stored.
     """
-    document_stored = self.get_object('document', 'numeric_id', document.numeric_id)
-    document_dict = document.dict()
-    document_dict['body'] = [DBRef(collection='body',id=self.body_uid)]
+    file_stored = self.get_object('file', 'originalId', file.originalId)
+    file_dict = file.dict()
     
-    # ensure that there is an identifier
-    if 'identifier' not in document_dict:
-      if 'numeric_id' not in document_dict:
-        logging.critical("Fatal error: neigher identifier nor numeric id avaiable at url %s", paper_dict.original_url)
-        return
-      else:
-        document_dict['identifier'] = str(document_dict['numeric_id'])
+    file_dict['body'] = DBRef(collection='body',id=self.body_uid)
+    
+    if 'originalId' not in file_dict:
+      logging.critical("Fatal error: no originalId avaiable at url %s", paper_dict.originalUrl)
 
     # create slug
-    document_dict['slug'] = self.create_slug(document_dict, 'document')
+    # file_dict['slug'] = self.create_slug(file_dict, 'document')
+    
+    # dereference items
+    # file_dict = self.dereference_object(file_dict, 'paper') #TODO: Backref
+    file_dict = self.dereference_object(file_dict, 'masterFile', 'file')
+    
     
     file_changed = False
-    if document_stored is not None:
-      # document exists in database and must be compared field by field
-      logging.info("Document %s is already in db with _id=%s", document.identifier, str(document_stored['_id']))
+    if file_stored is not None:
+      # file exists in database and must be compared field by field
+      logging.info("Document %s is already in db with _id=%s", file.originalId, str(file_stored['_id']))
       # check if file is referenced
-      file_stored = None
-      if 'file' in document_stored:
-        # assuming DBRef in document.file
-        assert type(document_stored['file']) == DBRef
-        file_stored = self.db.fs.files.find_one({'_id': document_stored['file'].id})
-      if file_stored is not None and document.content:
+      file_data_stored = None
+      if 'file' in file_stored:
+        # assuming DBRef in file.file
+        assert type(file_stored['file']) == DBRef
+        file_data_stored = self.db.fs.files.find_one({'_id': file_stored['file'].id})
+      if file_data_stored is not None and file.content:
         # compare stored and submitted file
-        if file_stored['length'] != len(document.content):
+        if file_data_stored['length'] != len(file.content):
           file_changed = True
-        elif file_stored['md5'] != md5(document.content).hexdigest():
+        elif file_data_stored['md5'] != md5(file.content).hexdigest():
           file_changed = True
-      if file_stored is None and document.content:
+      if file_data_stored is None and file.content:
         file_changed = True
     # Create new file version (if necessary)
-    if ((file_changed and 'depublication' not in document_stored) or (document_stored is None)) and document.content:
-      file_oid = self.fs.put(document.content,
-        filename=document.slug,
+    if ((file_changed and 'depublication' not in file_stored) or (file_stored is None)) and file.content:
+      file_oid = self.fs.put(file.content,
+        filename=file.filename,
         body=DBRef('body', self.body_uid))
       logging.info("New file version stored with _id=%s", str(file_oid))
-      document_dict['file'] = DBRef(collection='fs.files', id=file_oid)
+      file_dict['file'] = DBRef(collection='fs.files', id=file_oid)
 
     # erase file content (since stored elsewhere above)
-    if 'content' in document_dict:
-      del document_dict['content']
+    if 'content' in file_dict:
+      del file_dict['content']
     
     oid = None
-    if document_stored is None:
+    if file_stored is None:
       # insert new
-      oid = self.db.document.insert(document_dict)
-      logging.info("Document %s inserted with _id %s", document.identifier, str(oid))
+      oid = self.db.file.insert(file_dict)
+      logging.info("File %s inserted with _id %s", file.originalId, str(oid))
     else:
       # Only do partial update
-      oid = document_stored['_id']
+      oid = file_stored['_id']
       set_attributes = {}
-      for key in document_dict.keys():
-        if key in ['last_modified']:
+      for key in file_dict.keys():
+        if key in ['lastModified']:
           continue
-        if key not in document_stored:
-          set_attributes[key] = document_dict[key]
+        if key not in file_stored:
+          set_attributes[key] = file_dict[key]
         else:
           # add utc info to datetime objects
-          if isinstance(document_stored[key], datetime.datetime):
-            document_stored[key] = pytz.utc.localize(document_stored[key])
-          if document_stored[key] != document_dict[key]:
+          if isinstance(file_stored[key], datetime.datetime):
+            file_stored[key] = pytz.utc.localize(file_stored[key])
+          if file_stored[key] != file_dict[key]:
             logging.debug("Key '%s' will be updated", key)
-            set_attributes[key] = document_dict[key]
-      if 'file' not in document_dict and 'file' in document_stored:
-          set_attributes['file'] = document_stored['file']
+            set_attributes[key] = file_dict[key]
+      if 'file' not in file_dict and 'file' in file_stored:
+          set_attributes['file'] = file_stored['file']
       if file_changed or set_attributes != {}:
-        set_attributes['last_modified'] = document_dict['last_modified']
+        set_attributes['lastModified'] = file_dict['lastModified']
 
-        self.db.document.update({'_id': oid}, {'$set': set_attributes})
+        self.db.file.update({'_id': oid}, {'$set': set_attributes})
     return oid
 
   def slugify(self, identifier):
@@ -479,3 +548,11 @@ class MongoDatabase(object):
     rs = None
     for entry in aggregate['result']:
       logging.info("Queue %s, status %s: %d jobs", entry['_id']['qname'], entry['_id']['status'], entry['count'])
+
+  def merge_dict(self, x, y):
+    merged = dict(x,**y)
+    xkeys = x.keys()
+    for key in xkeys:
+      if type(x[key]) is types.DictType and y.has_key(key):
+        merged[key] = self.merge_dict(x[key],y[key])
+    return merged

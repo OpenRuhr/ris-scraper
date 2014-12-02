@@ -31,40 +31,49 @@ class Paper(Base):
   """
   A paper class
   """
-  def __init__(self, identifier=None, numeric_id=None, reference_number=None, title=None, type=None, date=None, original_url=None,
-      paper=None, document=None):
-    self.identifier = identifier
-    self.numeric_id = numeric_id
-    self.reference_number = reference_number
-    self.x_title = title
-    self.type = type
-    self.x_date = date
-    self.original_url = original_url
-    # Relations
-    self.document = document
-    self.paper = paper
+  def __init__(self, originalId=None, body=None, originalUrl=None, created=None, modified=None, keyword=None,
+               name=None, nameShort=None, reference=None, publishedDate=None, paperType=None, relatedPaper=None,
+               mainFile=None, auxiliaryFile=None, location=None, originator=None, consultation=None, underDirectionOf=None,
+               superordinatedPaper=None, subordinatedPaper=None):
+    self.body = body
+    self.originalId = originalId
+    self.originalUrl = originalUrl
+    self.created = created
+    self.modified = modified
+    self.keyword = keyword
+    
+    self.name = name
+    self.nameShort = nameShort
+    self.reference = reference
+    self.x_publishedDate = publishedDate
+    self.paperType = paperType
+    self.relatedPaper = relatedPaper #list of paper
+    self.mainFile = mainFile
+    self.auxiliaryFile = auxiliaryFile #list of file
+    self.location = location #list
+    self.originator = originator #list of person or organization
+    self.consultation = consultation #list of consultation
+    self.underDirectionOf = underDirectionOf #list of organization
+    
+    # Non OParl
+    self.superordinatedPaper = superordinatedPaper
+    self.subordinatedPaper = subordinatedPaper
+    
     super(Paper, self).__init__()
 
   @property
-  def date(self):
+  def publishedDate(self):
     """Fancy getter for the date property"""
-    return self.x_date
+    return self.x_publishedDate
 
-  @date.setter
-  def date(self, value):
+  @publishedDate.setter
+  def publishedDate(self, value):
     """
     Fancy setter for the x_date property, which
     applies a string-to-datetime filter if necessary
     """
     if type(value) == str:
-      self.x_date = filters.datestring_to_datetime(value)
+      self.x_publishedDate = filters.datestring_to_datetime(value)
     else:
-      self.x_date = value
+      self.x_publishedDate = value
 
-  @property
-  def title(self):
-    return self.x_title
-
-  @title.setter
-  def title(self, value):
-    self.x_title = value.strip()

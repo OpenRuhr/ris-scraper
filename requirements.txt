@@ -8,4 +8,5 @@ gunicorn
 pytz
 cssselect
 requests
+translitcodec
 

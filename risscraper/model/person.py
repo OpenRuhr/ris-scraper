@@ -29,45 +29,35 @@ import filters
 
 class Person(Base):
   """
-  A committee class
+  A person class
   """
-  def __init__(self, identifier=None, numeric_id=None, title=None, sex=None,
-      address=None, house_number=None, postalcode=None, city=None, phone=None, fax=None, mobile=None, email=None, website=None,
-      firstname=None, lastname=None, original_url=None, last_modified=None, committee=None):
-    self.identifier = identifier
-    self.numeric_id = numeric_id
-    self.title = title
-    self.sex = sex
-    self.firstname = firstname
-    self.lastname = lastname
-    self.address = address
-    self.postalcode = postalcode
-    self.city = city
+  def __init__(self, originalId=None, body=None, originalUrl=None, created=None, modified=None, keyword=None,
+      name=None, familyName=None, givenName=None, title=None, formOfAddress=None, gender=None,
+      email=None, phone=None, streetAddress=None, postalCode=None, locality=None, status=None, membership=None,
+      fax=None, mobile=None, website=None):
+    self.originalId = originalId
+    self.body = body
+    self.originalUrl = originalUrl
+    self.created = created
+    self.modified = modified
+    self.keyword = keyword
+    
+    self.name = name
+    self.familyName = familyName
+    self.givenName = givenName
+    self.title = title #list
+    self.formOfAddress = formOfAddress
+    self.gender = gender
+    self.email = email
     self.phone = phone
+    self.streetAddress = streetAddress
+    self.postalCode = postalCode
+    self.locality = locality
+    self.status = status
+    self.membership = membership #list
+    
+    # non OParl
     self.fax = fax
     self.mobile = mobile
-    self.original_url = original_url
-    self.last_modified = last_modified
-    self.x_committee = committee
+    self.website = website
     super(Person, self).__init__()
-
-
-  @property
-  def committee(self):
-    """Fancy getter for the x_date_start property"""
-    return self.x_committee
-
-  @committee.setter
-  def committee(self, value):
-    """
-    Fancy setter for the x_start property, which
-    applies a string-to-datetime filter if ecessary
-    """
-    for i in range(len(value)):
-      if 'start' in value[i]:
-        if type(value[i]['start']) == str:
-          value[i]['start'] = filters.datestring_to_datetime(value[i]['start'])
-      if 'start' in value[i]:
-        if type(value[i]['start']) == str:
-          value[i]['start'] = filters.datestring_to_datetime(value[i]['start'])
-    self.x_committee = value
