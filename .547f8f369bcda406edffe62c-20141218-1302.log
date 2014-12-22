@@ -1,0 +1,154 @@
+2014-12-18 14:02:16 root INFO Starting scraper with configuration from "547f8f369bcda406edffe62c" and loglevel "DEBUG"
+2014-12-18 14:02:16 root INFO Getting meeting (session) 2903 from https://sessionnet.krz.de/moers/bi/to0040.asp?__ksinr=2903
+2014-12-18 14:02:17 parse DEBUG format '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}-{hourend:d}:{minuteend:d}' -> '(?P<day>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<month>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<year>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+) (?P<hour>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+):(?P<minute>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)-(?P<hourend>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+):(?P<minuteend>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}' -> '(?P<day>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<month>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<year>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+) (?P<hour>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+):(?P<minute>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}-{hourend:d}:{minuteend:d}' -> '(?P<day>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<month>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<year>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+) (?P<hour>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+):(?P<minute>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)-(?P<hourend>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+):(?P<minuteend>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format '{day:d}.{month:d}.{year:d} {hour:d}:{minute:d}' -> '(?P<day>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<month>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)\\.(?P<year>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+) (?P<hour>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+):(?P<minute>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 parse DEBUG format u'vo0050.asp?__kvonr={paper_id:d}' -> u'vo0050\\.asp\\?__kvonr=(?P<paper_id>[-+ ]?\\d+|0[xX][0-9a-fA-F]+|[0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)'
+2014-12-18 14:02:17 root INFO Getting file '46658'
+2014-12-18 14:02:18 root INFO agendaitem 23579 updated with _id 5492d03a9bcda4066da77d32
+2014-12-18 14:02:18 root INFO agendaitem 23580 updated with _id 5492d03a9bcda4066da77d33
+2014-12-18 14:02:18 root INFO agendaitem 23581 updated with _id 5492d03a9bcda4066da77d34
+2014-12-18 14:02:18 root INFO agendaitem 23582 updated with _id 5492d03a9bcda4066da77d35
+2014-12-18 14:02:18 root INFO agendaitem 23583 updated with _id 5492d03a9bcda4066da77d36
+2014-12-18 14:02:18 root INFO agendaitem 23584 updated with _id 5492d03a9bcda4066da77d37
+2014-12-18 14:02:18 root INFO agendaitem 23585 updated with _id 5492d03a9bcda4066da77d38
+2014-12-18 14:02:18 root INFO agendaitem 23586 updated with _id 5492d03a9bcda4066da77d39
+2014-12-18 14:02:18 root INFO paper 2602 updated with _id 5492d03b9bcda4066da77d3a
+2014-12-18 14:02:18 root INFO consultation 235952602 updated with _id 5492d03b9bcda4066da77d3b
+2014-12-18 14:02:18 root INFO agendaitem 23595 updated with _id 5492d03b9bcda4066da77d3c
+2014-12-18 14:02:18 root INFO paper 2603 updated with _id 5492d03b9bcda4066da77d3d
+2014-12-18 14:02:18 root INFO consultation 235962603 updated with _id 5492d03b9bcda4066da77d3e
+2014-12-18 14:02:18 root INFO agendaitem 23596 updated with _id 5492d03b9bcda4066da77d3f
+2014-12-18 14:02:18 root INFO paper 2604 updated with _id 5492d03b9bcda4066da77d40
+2014-12-18 14:02:18 root INFO consultation 235972604 updated with _id 5492d03b9bcda4066da77d41
+2014-12-18 14:02:18 root INFO agendaitem 23597 updated with _id 5492d03b9bcda4066da77d42
+2014-12-18 14:02:18 root INFO paper 2605 updated with _id 5492d03b9bcda4066da77d43
+2014-12-18 14:02:18 root INFO consultation 235982605 updated with _id 5492d03b9bcda4066da77d44
+2014-12-18 14:02:18 root INFO agendaitem 23598 updated with _id 5492d03b9bcda4066da77d45
+2014-12-18 14:02:18 root INFO paper 2606 updated with _id 5492d03b9bcda4066da77d46
+2014-12-18 14:02:18 root INFO consultation 235992606 updated with _id 5492d03b9bcda4066da77d47
+2014-12-18 14:02:18 root INFO agendaitem 23599 updated with _id 5492d03b9bcda4066da77d48
+2014-12-18 14:02:18 root INFO paper 2607 updated with _id 5492d03b9bcda4066da77d49
+2014-12-18 14:02:18 root INFO consultation 236002607 updated with _id 5492d03b9bcda4066da77d4a
+2014-12-18 14:02:18 root INFO agendaitem 23600 updated with _id 5492d03b9bcda4066da77d4b
+2014-12-18 14:02:18 root INFO paper 2608 updated with _id 5492d03b9bcda4066da77d4c
+2014-12-18 14:02:18 root INFO consultation 236012608 updated with _id 5492d03b9bcda4066da77d4d
+2014-12-18 14:02:18 root INFO agendaitem 23601 updated with _id 5492d03b9bcda4066da77d4e
+2014-12-18 14:02:18 root INFO paper 2609 updated with _id 5492d03b9bcda4066da77d4f
+2014-12-18 14:02:18 root INFO consultation 236022609 updated with _id 5492d03b9bcda4066da77d50
+2014-12-18 14:02:18 root INFO agendaitem 23602 updated with _id 5492d03b9bcda4066da77d51
+2014-12-18 14:02:18 root INFO paper 2610 updated with _id 5492d03b9bcda4066da77d52
+2014-12-18 14:02:18 root INFO consultation 236032610 updated with _id 5492d03b9bcda4066da77d53
+2014-12-18 14:02:18 root INFO agendaitem 23603 updated with _id 5492d03b9bcda4066da77d54
+2014-12-18 14:02:18 root INFO paper 2611 updated with _id 5492d03b9bcda4066da77d55
+2014-12-18 14:02:18 root INFO consultation 236042611 updated with _id 5492d03b9bcda4066da77d56
+2014-12-18 14:02:18 root INFO agendaitem 23604 updated with _id 5492d03b9bcda4066da77d57
+2014-12-18 14:02:18 root INFO paper 2612 updated with _id 5492d03b9bcda4066da77d58
+2014-12-18 14:02:18 root INFO consultation 236052612 updated with _id 5492d03b9bcda4066da77d59
+2014-12-18 14:02:18 root INFO agendaitem 23605 updated with _id 5492d03b9bcda4066da77d5a
+2014-12-18 14:02:18 root INFO paper 2620 updated with _id 5492d03b9bcda4066da77d5b
+2014-12-18 14:02:18 root INFO consultation 236192620 updated with _id 5492d03b9bcda4066da77d5c
+2014-12-18 14:02:18 root INFO agendaitem 23619 updated with _id 5492d03b9bcda4066da77d5d
+2014-12-18 14:02:18 root INFO agendaitem 23606 updated with _id 5492d03b9bcda4066da77d5e
+2014-12-18 14:02:18 root INFO agendaitem 23607 updated with _id 5492d03b9bcda4066da77d5f
+2014-12-18 14:02:18 root INFO agendaitem 23608 updated with _id 5492d03b9bcda4066da77d60
+2014-12-18 14:02:18 root INFO agendaitem 23610 updated with _id 5492d03b9bcda4066da77d61
+2014-12-18 14:02:18 root INFO agendaitem 23611 updated with _id 5492d03b9bcda4066da77d62
+2014-12-18 14:02:18 root INFO agendaitem 23612 updated with _id 5492d03b9bcda4066da77d63
+2014-12-18 14:02:18 root INFO agendaitem 23613 updated with _id 5492d03b9bcda4066da77d64
+2014-12-18 14:02:18 root INFO agendaitem 23614 updated with _id 5492d03b9bcda4066da77d65
+2014-12-18 14:02:18 root INFO agendaitem 23615 updated with _id 5492d03b9bcda4066da77d66
+2014-12-18 14:02:18 root INFO agendaitem 23616 updated with _id 5492d03b9bcda4066da77d67
+2014-12-18 14:02:18 root INFO agendaitem 23617 updated with _id 5492d03b9bcda4066da77d68
+2014-12-18 14:02:18 root INFO agendaitem 23623 updated with _id 5492d03b9bcda4066da77d69
+2014-12-18 14:02:18 root INFO agendaitem 23618 updated with _id 5492d03b9bcda4066da77d6a
+2014-12-18 14:02:18 root INFO agendaitem 23620 updated with _id 5492d03b9bcda4066da77d6b
+2014-12-18 14:02:18 root INFO agendaitem 23621 updated with _id 5492d03b9bcda4066da77d6c
+2014-12-18 14:02:18 root INFO Document 46658 is already in db with _id=5492d03d9bcda4066da77d6f
+2014-12-18 14:02:18 root INFO meeting 2903 updated with _id 5492d03d9bcda4066da77d70
+2014-12-18 14:02:18 root INFO Meeting 2903 stored with _id 5492d03d9bcda4066da77d70
+2014-12-18 14:02:18 root INFO Scraper finished.
