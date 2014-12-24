@@ -25,7 +25,7 @@ entstanden.
 
 import argparse
 from risscraper.scrapersessionnet import ScraperSessionNet
-from risscraper.scraperallris import ScraperAllRis
+#from risscraper.scraperallris import ScraperAllRis
 import inspect
 import os
 import datetime
