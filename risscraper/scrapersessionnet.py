@@ -450,8 +450,16 @@ class ScraperSessionNet(object):
     found_files = []
     rows = dom.xpath(self.xpath['MEETING_DETAIL_AGENDAITEM_ROWS'])
     if len(rows) == 0:
-      logging.critical('Cannot find agenda using XPath MEETING_DETAIL_AGENDAITEM_ROWS')
-      raise TemplateError('Cannot find agenda using XPath MEETING_DETAIL_AGENDAITEM_ROWS')
+      no_agendaitem_check = dom.xpath('//h5')
+      no_agendaitem = False
+      for item in no_agendaitem_check:
+        if item.text.strip() == 'Keine Daten gefunden.':
+          no_agendaitem = True
+      if no_agendaitem:
+        logging.warn("Meeting without agendaitems found in %s" % meeting_url)
+      else:
+        logging.critical('Cannot find agenda using XPath MEETING_DETAIL_AGENDAITEM_ROWS at meeting %s' % meeting_url)
+        raise TemplateError('Cannot find agenda using XPath MEETING_DETAIL_AGENDAITEM_ROWS at %s' % meeting_url)
       meeting.agendaitem = []
     else:
       agendaitems = []
@@ -857,7 +865,7 @@ class ScraperSessionNet(object):
                   # Traversing the whole mechanize response to submit this form
                   for mform in mechanize_forms:
                     for control in mform.controls:
-                      if control.name == 'DT' and control.value == document_id:
+                      if control.name == 'DT' and control.value == file_id:
                         file = self.get_file(file=file, form=mform)
                         files.append(file)
                         found_files.append(file_id)
