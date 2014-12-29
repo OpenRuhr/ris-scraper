@@ -781,6 +781,9 @@ class ScraperSessionNet(object):
                 if hasattr(self, 'paper_queue') and parsed is not None:
                   # add subordinate paper to queue
                   self.paper_queue.add(parsed['paper_id'])
+            elif tdcontent == u'Anträge zur Vorlage:':
+              current_category = 'todo'
+              pass #TODO: WTF is this?
             else:
               if current_category == 'subordinates' and len(tds) > n+1:
                 for link in tds[n + 1].xpath('a'):
