@@ -909,7 +909,7 @@ class ScraperSessionNet(object):
         file.mimetype = magic.from_buffer(file.content, mime=True)
         file.filename = self.make_filename(file.originalId, file.mimetype)
       except mechanize.HTTPError as e:
-        if e.code == 502:
+        if e.code == 502 or e.code == 500:
           retry_counter = retry_counter + 1
           retry = True
           log.info("HTTP Error 502 while getting %s, try again", url)
