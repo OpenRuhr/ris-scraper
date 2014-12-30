@@ -917,7 +917,7 @@ class ScraperSessionNet(object):
         if e.code == 502 or e.code == 500:
           retry_counter = retry_counter + 1
           retry = True
-          log.info("HTTP Error %s while getting %s, try again", e.code, url)
+          logging.info("HTTP Error %s while getting %s, try again" % (e.code, url))
           time.sleep(self.config['scraper']['wait_time'] * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
@@ -981,7 +981,7 @@ class ScraperSessionNet(object):
         if e.code == 502 or e.code == 500:
           retry_counter = retry_counter + 1
           retry = True
-          log.info("HTTP Error %s while getting %s, try again", e.code, url)
+          logging.info("HTTP Error %s while getting %s, try again" % (e.code, url))
           time.sleep(self.config['scraper']['wait_time'] * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
