@@ -687,14 +687,16 @@ class ScraperSessionNet(object):
           sys.stderr.write("URL not found (HTTP 404) error caught: %s\n" % paper_url)
           sys.stderr.write("Please check BASE_URL in your configuration.\n")
           sys.exit(1)
-        elif e.code == 502:
+        elif e.code == 502 or e.code == 500:
           try_until = 4
           try_found = True
           if try_until == try_counter:
             logging.error("Permanent error in %s after 4 retrys.", paper_url)
             return
           else:
-            logging.info("Original RIS Server Bug, restart scraping paper %s", paper_url)
+            logging.info("Original RIS Server Bug, restart fetching paper %s", paper_url)
+      if not response:
+        return
       mechanize_forms = mechanize.ParseResponse(response, backwards_compat=False)
       response.seek(0)
       html = response.read()
@@ -915,7 +917,7 @@ class ScraperSessionNet(object):
         if e.code == 502 or e.code == 500:
           retry_counter = retry_counter + 1
           retry = True
-          log.info("HTTP Error 502 while getting %s, try again", url)
+          log.info("HTTP Error %s while getting %s, try again", e.code, url)
           time.sleep(self.config['scraper']['wait_time'] * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
@@ -976,10 +978,10 @@ class ScraperSessionNet(object):
         response = self.user_agent.open(url)
         return response
       except urllib2.HTTPError,e:
-        if e.code == 502:
+        if e.code == 502 or e.code == 500:
           retry_counter = retry_counter + 1
           retry = True
-          log.info("HTTP Error 502 while getting %s, try again", url)
+          log.info("HTTP Error %s while getting %s, try again", e.code, url)
           time.sleep(self.config['scraper']['wait_time'] * 5)
         else:
           logging.critical("HTTP Error %s while getting %s", e.code, url)
